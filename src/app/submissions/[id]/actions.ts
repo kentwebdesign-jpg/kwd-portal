@@ -2,11 +2,13 @@
 
 import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { getViewer } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { createSite } from "@/lib/instawp";
+import { buildClientSite } from "@/lib/sitebuilder";
 
-// Admin-only: provision a WordPress site for this brief via InstaWP.
+// Admin-only: provision a WordPress site for this brief and build it out
+// (theme + pages from the brief) via InstaWP.
 export async function buildSite(formData: FormData) {
   const { isAdmin } = await getViewer();
   if (!isAdmin) throw new Error("Not authorised.");
@@ -17,19 +19,24 @@ export async function buildSite(formData: FormData) {
   const submission = await prisma.submission.findUnique({ where: { id } });
   if (!submission) return;
 
+  // The InstaWP server fetches the theme zip from our public URL.
+  const h = await headers();
+  const host = h.get("host");
+  const proto = h.get("x-forwarded-proto") ?? "https";
+  const themeUrl = `${proto}://${host}/themes/kwd-theme.zip`;
+
   try {
-    const site = await createSite({
-      siteName: submission.businessName ?? undefined,
-    });
+    const result = await buildClientSite(submission.data as Record<string, unknown>, { themeUrl });
     await prisma.submission.update({
       where: { id },
       data: {
         buildStatus: "ready",
-        buildSiteUrl: site.wp_url ?? null,
+        buildSiteUrl: result.siteUrl,
         buildData: {
-          wp_username: site.wp_username ?? null,
-          wp_password: site.wp_password ?? null,
-          task_id: site.task_id ?? null,
+          wp_username: result.adminUser,
+          wp_password: result.adminPassword,
+          app_password: result.appPassword,
+          site_id: result.siteId,
         } as Prisma.InputJsonValue,
         builtAt: new Date(),
       },

@@ -164,8 +164,8 @@ export default async function SubmissionDetail({
           </button>
         </form>
         <p style={{ color: "#aaa", fontSize: 12, margin: "8px 0 0" }}>
-          Spins up a fresh WordPress site for this client. Image generation and content population
-          come next.
+          Provisions a WordPress site, installs the KWD theme, and builds Home, About, Services and
+          Contact pages from this brief. Takes ~30 seconds.
         </p>
       </section>
 

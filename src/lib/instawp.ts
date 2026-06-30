@@ -4,6 +4,7 @@
 const INSTAWP_BASE = "https://app.instawp.io/api/v2";
 
 export type InstaWpSite = {
+  id?: number | string;
   wp_url?: string;
   wp_username?: string;
   wp_password?: string;
@@ -47,4 +48,51 @@ export async function createSite(opts: { siteName?: string }): Promise<InstaWpSi
 
   // InstaWP wraps the payload in { status, message, data: {...} }.
   return (json.data ?? json) as InstaWpSite;
+}
+
+function instaHeaders() {
+  const token = process.env.INSTAWP_API_TOKEN;
+  if (!token) throw new Error("INSTAWP_API_TOKEN is not set.");
+  return {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  };
+}
+
+// Run a shell/WP-CLI command on a site via InstaWP's two-step command API
+// (create command -> execute on site -> clean up). Returns the raw output.
+export async function runWpCli(siteId: number | string, command: string): Promise<string> {
+  const headers = instaHeaders();
+
+  const cRes = await fetch(`${INSTAWP_BASE}/commands`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ name: "kwd-pipeline", command }),
+  });
+  const cJson = await cRes.json().catch(() => ({}));
+  const commandId = cJson?.data?.id;
+  if (!commandId) throw new Error(cJson?.message || "Failed to create command.");
+
+  try {
+    const eRes = await fetch(`${INSTAWP_BASE}/sites/${siteId}/execute-command`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ command_id: commandId }),
+    });
+    const eJson = await eRes.json().catch(() => ({}));
+    if (!eRes.ok || eJson?.status === false) {
+      throw new Error(eJson?.message || `Command failed (HTTP ${eRes.status})`);
+    }
+    return String(eJson?.data ?? "");
+  } finally {
+    await fetch(`${INSTAWP_BASE}/commands/${commandId}`, { method: "DELETE", headers }).catch(() => {});
+  }
+}
+
+// InstaWP prefixes command output with a "<timestamp> <command>" line; the
+// real result is the last non-empty line.
+export function lastLine(output: string): string {
+  const lines = output.split("\n").map((l) => l.trim()).filter(Boolean);
+  return lines[lines.length - 1] ?? "";
 }
