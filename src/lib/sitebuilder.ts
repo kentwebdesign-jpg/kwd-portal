@@ -78,6 +78,7 @@ export type BuildResult = {
   adminPassword: string; // for wp-admin login
   appPassword: string; // for REST writes
   designed: boolean; // true if AI-designed, false if fallback
+  aiError: string | null; // why AI design fell back, if it did
 };
 
 export async function buildClientSite(
@@ -111,9 +112,11 @@ export async function buildClientSite(
     throw new Error("Could not obtain an application password from the new site.");
   }
 
-  // Claude designs the site (null if AI is off or it fails).
+  // Claude designs the site (returns an error reason if AI is off or it fails).
   await stage("Designing the site with AI");
-  const design = await generateSiteDesign(data);
+  const ai = await generateSiteDesign(data);
+  const design = ai.html ?? null;
+  const aiError = ai.error ?? null;
 
   await stage("Building the pages");
 
@@ -128,7 +131,7 @@ export async function buildClientSite(
     await runWpCli(siteId, `wp theme install ${opts.themeBaseUrl}/kwd-canvas.zip --activate`);
     const home = await wp.createPage({ title: txt(data.business_name) || "Home", slug: "home", content: design });
     await wp.updateSettings({ show_on_front: "page", page_on_front: home.id as number });
-    return { siteUrl, siteId, adminUser, adminPassword, appPassword, designed: true };
+    return { siteUrl, siteId, adminUser, adminPassword, appPassword, designed: true, aiError: null };
   }
 
   // Fallback: basic theme with plain pages from the brief.
@@ -149,5 +152,5 @@ export async function buildClientSite(
     // menu is best-effort
   }
 
-  return { siteUrl, siteId, adminUser, adminPassword, appPassword, designed: false };
+  return { siteUrl, siteId, adminUser, adminPassword, appPassword, designed: false, aiError };
 }

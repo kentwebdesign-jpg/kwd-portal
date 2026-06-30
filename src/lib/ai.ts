@@ -44,8 +44,10 @@ CONTENT:
 
 Build the best site you can for this specific business.`;
 
-export async function generateSiteDesign(brief: Record<string, unknown>): Promise<string | null> {
-  if (!process.env.ANTHROPIC_API_KEY) return null;
+export type DesignResult = { html?: string; error?: string };
+
+export async function generateSiteDesign(brief: Record<string, unknown>): Promise<DesignResult> {
+  if (!process.env.ANTHROPIC_API_KEY) return { error: "ANTHROPIC_API_KEY is not set" };
 
   try {
     const client = new Anthropic();
@@ -74,10 +76,11 @@ export async function generateSiteDesign(brief: Record<string, unknown>): Promis
     let html = text.trim();
     html = html.replace(/^```[a-zA-Z]*\n?/, "").replace(/\n?```$/, "").trim();
 
-    if (html.length < 200) return null; // implausibly short — treat as failure
-    return html;
+    if (html.length < 200) return { error: "AI returned too little content" };
+    return { html };
   } catch (err) {
-    console.error("AI design generation failed, falling back to basic theme:", err);
-    return null;
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("AI design generation failed, falling back to basic theme:", msg);
+    return { error: msg };
   }
 }

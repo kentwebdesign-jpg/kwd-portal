@@ -113,6 +113,8 @@ export default async function SubmissionDetail({
     wp_username?: string;
     wp_password?: string;
     error?: string;
+    designed?: boolean;
+    ai_error?: string | null;
   };
 
   return (
@@ -146,7 +148,13 @@ export default async function SubmissionDetail({
               <div style={{ marginBottom: 14, fontSize: 14 }}>
                 <p style={{ color: "#137e6d", fontWeight: 600, margin: "0 0 8px" }}>
                   ✓ Site built{submission.builtAt ? ` — ${submission.builtAt.toLocaleString("en-GB")}` : ""}
+                  {build.designed === false ? " (basic theme)" : ""}
                 </p>
+                {build.designed === false && (
+                  <p style={{ color: "#b8860b", fontSize: 13, margin: "0 0 8px" }}>
+                    ⚠ AI design unavailable, used the basic theme. Reason: {build.ai_error ?? "unknown"}
+                  </p>
+                )}
                 <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 8 }}>
                   <a href={submission.buildSiteUrl} target="_blank" rel="noopener noreferrer" style={{ color: "#0e7c7b", fontWeight: 600 }}>
                     Open site →
