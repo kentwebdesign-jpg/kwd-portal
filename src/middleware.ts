@@ -10,6 +10,7 @@ const isProtected = createRouteMatcher([
   "/brief(.*)",
   "/dashboard(.*)",
   "/submissions(.*)",
+  "/requests(.*)",
   "/api/submit",
   "/api/invite",
 ]);

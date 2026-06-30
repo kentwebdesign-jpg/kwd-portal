@@ -23,3 +23,16 @@ model Submission {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
+
+model ChangeRequest {
+  id          String   @id @default(cuid())
+  userId      String // Clerk user id of the client who raised it
+  clientEmail String? // captured at creation for easy display in admin
+  title       String
+  details     String
+  status      String   @default("open") // open | in_progress | done
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+}

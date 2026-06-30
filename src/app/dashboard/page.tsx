@@ -2,8 +2,15 @@ import { redirect } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
 import { getViewer } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { createChangeRequest } from "./actions";
 
 export const dynamic = "force-dynamic";
+
+const STATUS_LABEL: Record<string, string> = {
+  open: "Open",
+  in_progress: "In progress",
+  done: "Done",
+};
 
 export default async function Dashboard() {
   const { user, isAdmin } = await getViewer();
@@ -11,6 +18,10 @@ export default async function Dashboard() {
   if (isAdmin) redirect("/submissions");
 
   const brief = await prisma.submission.findUnique({ where: { userId: user.id } });
+  const requests = await prisma.changeRequest.findMany({
+    where: { userId: user.id },
+    orderBy: { createdAt: "desc" },
+  });
   const done = !!brief;
   const firstName = user.firstName ?? "there";
 
@@ -70,10 +81,53 @@ export default async function Dashboard() {
         )}
       </section>
 
-      {/* Future: change requests */}
-      <section style={{ marginTop: 20, border: "1px dashed #ddd", borderRadius: 12, padding: 24, color: "#999" }}>
-        <h2 style={{ fontSize: 18, margin: "0 0 6px", color: "#777" }}>Change requests</h2>
-        <p style={{ margin: 0 }}>Once your site is live, you&apos;ll be able to request changes here.</p>
+      {/* Change requests */}
+      <section style={{ marginTop: 20, border: "1px solid #e8e8e8", borderRadius: 12, padding: 24 }}>
+        <h2 style={{ fontSize: 18, margin: "0 0 4px" }}>Change requests</h2>
+        <p style={{ color: "#666", marginTop: 0, fontSize: 14 }}>
+          Need something changed on your site? Send us the details and we&apos;ll take care of it.
+        </p>
+
+        <form action={createChangeRequest} style={{ display: "grid", gap: 10, marginTop: 8 }}>
+          <input
+            name="title"
+            required
+            placeholder="Short summary (e.g. Update opening hours)"
+            style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid #ddd", fontSize: 14 }}
+          />
+          <textarea
+            name="details"
+            required
+            rows={3}
+            placeholder="What would you like changed?"
+            style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid #ddd", fontSize: 14, resize: "vertical" }}
+          />
+          <div>
+            <button
+              type="submit"
+              style={{ background: "#0e7c7b", color: "#fff", border: "none", borderRadius: 8, padding: "10px 18px", fontWeight: 600, cursor: "pointer" }}
+            >
+              Submit request
+            </button>
+          </div>
+        </form>
+
+        {requests.length > 0 && (
+          <ul style={{ listStyle: "none", padding: 0, margin: "20px 0 0", display: "grid", gap: 10 }}>
+            {requests.map((r) => (
+              <li key={r.id} style={{ border: "1px solid #eee", borderRadius: 8, padding: "12px 14px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                  <strong style={{ fontSize: 14 }}>{r.title}</strong>
+                  <span style={{ fontSize: 12, color: "#0e7c7b", fontWeight: 600, whiteSpace: "nowrap" }}>
+                    {STATUS_LABEL[r.status] ?? r.status}
+                  </span>
+                </div>
+                <p style={{ margin: "6px 0 0", fontSize: 13, color: "#555", whiteSpace: "pre-wrap" }}>{r.details}</p>
+                <p style={{ margin: "6px 0 0", fontSize: 11, color: "#aaa" }}>{r.createdAt.toLocaleDateString("en-GB")}</p>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     </main>
   );

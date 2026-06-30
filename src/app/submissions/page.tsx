@@ -21,6 +21,11 @@ export default async function SubmissionsPage() {
         <h1 style={{ fontSize: 28, marginBottom: 4 }}>Onboarding briefs</h1>
         <UserButton />
       </div>
+      <nav style={{ margin: "4px 0 8px", fontSize: 14 }}>
+        <span style={{ color: "#444", fontWeight: 600 }}>Briefs</span>
+        <span style={{ color: "#ccc", margin: "0 8px" }}>·</span>
+        <a href="/requests" style={{ color: "#0e7c7b", textDecoration: "none" }}>Change requests</a>
+      </nav>
       <p style={{ color: "#666", marginTop: 0 }}>
         {submissions.length} {submissions.length === 1 ? "brief" : "briefs"} received.
       </p>
