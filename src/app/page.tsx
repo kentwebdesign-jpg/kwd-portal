@@ -34,7 +34,7 @@ export default async function Home() {
       </p>
 
       <div style={{ marginTop: 28 }}>
-        <SignInButton mode="redirect">
+        <SignInButton mode="redirect" forceRedirectUrl="/" signUpForceRedirectUrl="/">
           <button
             style={{
               background: "#0e7c7b",
