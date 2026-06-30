@@ -628,23 +628,55 @@
       consent.parentNode.style.borderColor = 'var(--err)';
       return;
     }
-    showOverlay('<div class="spinner"></div><h3 style="margin:0;font-family:var(--display);font-weight:500">Sending your brief…</h3><p class="muted" style="margin:.4em 0 0">One moment.</p>');
+    showOverlay('<div class="spinner"></div><h3 style="margin:0;font-family:var(--display);font-weight:500">Sending your brief…</h3><p class="muted" style="margin:.4em 0 0">Uploading your files, one moment.</p>');
 
-    // Save the brief to the Kent Web Design portal database.
-    // (File uploads are handled in a later step; this sends the text answers.)
-    var d = collectText();
-
-    fetch('/api/submit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify(d)
-    })
+    // Upload any files straight to storage, then save the brief (with the file
+    // references) to the Kent Web Design portal database.
+    uploadFiles()
+      .then(function (uploaded) {
+        var d = collectText();
+        d.__files = uploaded;
+        return fetch('/api/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify(d)
+        });
+      })
       .then(function (res) { return res.json().catch(function () { return {}; }).then(function (j) { return { ok: res.ok, j: j }; }); })
       .then(function (r) {
         if (r.ok && r.j && r.j.success !== false) { onSuccess(); }
         else { throw new Error((r.j && r.j.message) || 'Submission failed'); }
       })
       .catch(function () { onError(); });
+  }
+
+  // For each chosen file: ask the portal for a one-time upload URL, then PUT the
+  // file directly to storage. Returns { logo:[...], brand_guidelines:[...], photos:[...] }.
+  function uploadFiles() {
+    var fields = ['logo', 'brand_guidelines', 'photos'];
+    var uploaded = { logo: [], brand_guidelines: [], photos: [] };
+    var jobs = [];
+    fields.forEach(function (field) {
+      (files[field] || []).forEach(function (f) {
+        var type = f.type || 'application/octet-stream';
+        var job = fetch('/api/upload-url', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filename: f.name, type: type, field: field })
+        })
+          .then(function (res) { return res.json(); })
+          .then(function (j) {
+            if (!j.url) throw new Error('No upload URL');
+            return fetch(j.url, { method: 'PUT', headers: { 'Content-Type': type }, body: f })
+              .then(function (put) {
+                if (!put.ok) throw new Error('Upload failed');
+                uploaded[field].push({ key: j.key, name: f.name, type: type, size: f.size });
+              });
+          });
+        jobs.push(job);
+      });
+    });
+    return Promise.all(jobs).then(function () { return uploaded; });
   }
 
   function onSuccess() {

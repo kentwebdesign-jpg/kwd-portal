@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getViewer } from "@/lib/auth";
+import { presignDownload } from "@/lib/r2";
 
 export const dynamic = "force-dynamic";
 
@@ -89,7 +90,22 @@ export default async function SubmissionDetail({
   if (!submission) notFound();
 
   const data = (submission.data ?? {}) as Record<string, unknown>;
-  const entries = Object.entries(data);
+
+  // Pull out uploaded files (stored under __files) and pre-sign download links.
+  type StoredFile = { key: string; name: string; type?: string; size?: number };
+  const filesByField = (data.__files ?? {}) as Record<string, StoredFile[]>;
+  const fileGroups = await Promise.all(
+    Object.entries(filesByField).map(async ([field, list]) => ({
+      field,
+      files: await Promise.all(
+        (list ?? []).map(async (f) => ({ ...f, url: await presignDownload(f.key) })),
+      ),
+    })),
+  );
+  const hasFiles = fileGroups.some((g) => g.files.length > 0);
+
+  // Everything except the file refs goes in the answers list.
+  const entries = Object.entries(data).filter(([key]) => key !== "__files");
 
   return (
     <main style={{ maxWidth: 760, margin: "0 auto", padding: "40px 24px", fontFamily: "system-ui, sans-serif" }}>
@@ -101,6 +117,38 @@ export default async function SubmissionDetail({
         {submission.contactName ?? "—"} · {submission.contactEmail ?? "—"} · {submission.status} ·{" "}
         {submission.createdAt.toLocaleString("en-GB")}
       </p>
+
+      {hasFiles && (
+        <section style={{ marginTop: 24 }}>
+          <h2 style={{ fontSize: 16, margin: "0 0 10px" }}>Uploaded files</h2>
+          {fileGroups.map((g) =>
+            g.files.length === 0 ? null : (
+              <div key={g.field} style={{ marginBottom: 14 }}>
+                <p style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: ".05em", color: "#999", margin: "0 0 6px" }}>
+                  {labelFor(g.field)}
+                </p>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+                  {g.files.map((f) => (
+                    <a
+                      key={f.key}
+                      href={f.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ display: "block", border: "1px solid #eee", borderRadius: 8, padding: 8, textDecoration: "none", color: "#0e7c7b", fontSize: 13, maxWidth: 160 }}
+                    >
+                      {f.type?.startsWith("image/") ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={f.url} alt={f.name} style={{ width: 140, height: 100, objectFit: "cover", borderRadius: 4, display: "block", marginBottom: 6 }} />
+                      ) : null}
+                      <span style={{ wordBreak: "break-word" }}>{f.name}</span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            ),
+          )}
+        </section>
+      )}
 
       <dl style={{ marginTop: 28 }}>
         {entries.map(([key, value]) => (
