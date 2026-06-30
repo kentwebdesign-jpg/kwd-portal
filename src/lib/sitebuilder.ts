@@ -80,7 +80,19 @@ export type BuildResult = {
   designed: boolean; // true if AI-designed, false if fallback
 };
 
-export async function buildClientSite(data: Brief, opts: { themeBaseUrl: string }): Promise<BuildResult> {
+export async function buildClientSite(
+  data: Brief,
+  opts: { themeBaseUrl: string; onStage?: (stage: string) => void | Promise<void> },
+): Promise<BuildResult> {
+  const stage = async (s: string) => {
+    try {
+      await opts.onStage?.(s);
+    } catch {
+      // progress reporting is best-effort
+    }
+  };
+
+  await stage("Provisioning the WordPress site");
   const site = await createSite();
   const siteId = site.id;
   const siteUrl = site.wp_url;
@@ -91,6 +103,7 @@ export async function buildClientSite(data: Brief, opts: { themeBaseUrl: string 
   }
 
   // Mint an application password for REST writes.
+  await stage("Setting up access");
   const appPassword = lastLine(
     await runWpCli(siteId, `wp user application-password create ${adminUser} kwd-portal --porcelain`),
   );
@@ -99,7 +112,10 @@ export async function buildClientSite(data: Brief, opts: { themeBaseUrl: string 
   }
 
   // Claude designs the site (null if AI is off or it fails).
+  await stage("Designing the site with AI");
   const design = await generateSiteDesign(data);
+
+  await stage("Building the pages");
 
   const wp = wpClient(siteUrl, adminUser, appPassword);
   await wp.updateSettings({

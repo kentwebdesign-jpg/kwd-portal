@@ -21,6 +21,7 @@ model Submission {
   contactEmail String?
   data         Json // the full collectText() payload from the form
   buildStatus  String? // null = not built | building | ready | error
+  buildStage   String? // human-readable progress while building
   buildSiteUrl String? // the provisioned WordPress site URL
   buildData    Json? // { wp_username, wp_password, task_id, ... } or { error }
   builtAt      DateTime?

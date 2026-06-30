@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getViewer } from "@/lib/auth";
 import { presignDownload } from "@/lib/r2";
 import { buildSite } from "./actions";
+import BuildStatusPoller from "./BuildStatusPoller";
 
 export const dynamic = "force-dynamic";
 
@@ -125,48 +126,62 @@ export default async function SubmissionDetail({
         {submission.createdAt.toLocaleString("en-GB")}
       </p>
 
-      {/* Site build (InstaWP) */}
+      {/* Site build */}
       <section style={{ marginTop: 24, border: "1px solid #e8e8e8", borderRadius: 12, padding: 20 }}>
         <h2 style={{ fontSize: 16, margin: "0 0 10px" }}>Site build</h2>
 
-        {submission.buildStatus === "ready" && submission.buildSiteUrl ? (
-          <div style={{ marginBottom: 14, fontSize: 14 }}>
-            <p style={{ color: "#137e6d", fontWeight: 600, margin: "0 0 8px" }}>
-              ✓ Site provisioned{submission.builtAt ? ` — ${submission.builtAt.toLocaleString("en-GB")}` : ""}
+        {submission.buildStatus === "building" ? (
+          <div style={{ fontSize: 14 }}>
+            <p style={{ color: "#0e7c7b", fontWeight: 600, margin: "0 0 6px" }}>
+              ⏳ Building… {submission.buildStage ? `— ${submission.buildStage}` : ""}
             </p>
-            <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 8 }}>
-              <a href={submission.buildSiteUrl} target="_blank" rel="noopener noreferrer" style={{ color: "#0e7c7b", fontWeight: 600 }}>
-                Open site →
-              </a>
-              <a href={`${submission.buildSiteUrl.replace(/\/$/, "")}/wp-admin`} target="_blank" rel="noopener noreferrer" style={{ color: "#0e7c7b", fontWeight: 600 }}>
-                WP admin →
-              </a>
-            </div>
-            {(build.wp_username || build.wp_password) && (
-              <p style={{ color: "#666", margin: 0, fontFamily: "monospace", fontSize: 13 }}>
-                {build.wp_username} / {build.wp_password}
-              </p>
-            )}
+            <p style={{ color: "#888", margin: 0, fontSize: 13 }}>
+              This updates automatically and takes a minute or two. You&apos;ll get an email when it&apos;s done.
+            </p>
+            <BuildStatusPoller />
           </div>
-        ) : submission.buildStatus === "error" ? (
-          <p style={{ color: "#c0392b", fontSize: 14, margin: "0 0 12px" }}>
-            Build failed: {build.error ?? "unknown error"}. Try again.
-          </p>
-        ) : null}
+        ) : (
+          <>
+            {submission.buildStatus === "ready" && submission.buildSiteUrl ? (
+              <div style={{ marginBottom: 14, fontSize: 14 }}>
+                <p style={{ color: "#137e6d", fontWeight: 600, margin: "0 0 8px" }}>
+                  ✓ Site built{submission.builtAt ? ` — ${submission.builtAt.toLocaleString("en-GB")}` : ""}
+                </p>
+                <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 8 }}>
+                  <a href={submission.buildSiteUrl} target="_blank" rel="noopener noreferrer" style={{ color: "#0e7c7b", fontWeight: 600 }}>
+                    Open site →
+                  </a>
+                  <a href={`${submission.buildSiteUrl.replace(/\/$/, "")}/wp-admin`} target="_blank" rel="noopener noreferrer" style={{ color: "#0e7c7b", fontWeight: 600 }}>
+                    WP admin →
+                  </a>
+                </div>
+                {(build.wp_username || build.wp_password) && (
+                  <p style={{ color: "#666", margin: 0, fontFamily: "monospace", fontSize: 13 }}>
+                    {build.wp_username} / {build.wp_password}
+                  </p>
+                )}
+              </div>
+            ) : submission.buildStatus === "error" ? (
+              <p style={{ color: "#c0392b", fontSize: 14, margin: "0 0 12px" }}>
+                Build failed: {build.error ?? "unknown error"}. Try again.
+              </p>
+            ) : null}
 
-        <form action={buildSite}>
-          <input type="hidden" name="id" value={submission.id} />
-          <button
-            type="submit"
-            style={{ background: "#0e7c7b", color: "#fff", border: "none", borderRadius: 8, padding: "10px 20px", fontWeight: 600, cursor: "pointer" }}
-          >
-            {submission.buildStatus === "ready" ? "Rebuild site" : "Build site"}
-          </button>
-        </form>
-        <p style={{ color: "#aaa", fontSize: 12, margin: "8px 0 0" }}>
-          Provisions a WordPress site, installs the KWD theme, and builds Home, About, Services and
-          Contact pages from this brief. Takes ~30 seconds.
-        </p>
+            <form action={buildSite}>
+              <input type="hidden" name="id" value={submission.id} />
+              <button
+                type="submit"
+                style={{ background: "#0e7c7b", color: "#fff", border: "none", borderRadius: 8, padding: "10px 20px", fontWeight: 600, cursor: "pointer" }}
+              >
+                {submission.buildStatus === "ready" ? "Rebuild site" : "Build site"}
+              </button>
+            </form>
+            <p style={{ color: "#aaa", fontSize: 12, margin: "8px 0 0" }}>
+              Claude designs a complete site from this brief and publishes it to WordPress. Takes a
+              minute or two; you&apos;ll get an email when it&apos;s ready.
+            </p>
+          </>
+        )}
       </section>
 
       {hasFiles && (
