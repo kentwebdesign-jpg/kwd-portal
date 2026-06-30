@@ -1,0 +1,24 @@
+// Kent Web Design portal — database schema.
+// One row per completed onboarding brief. The full set of answers is stored
+// as JSON in `data`; a few key fields are pulled out as columns so we can list
+// and search submissions without parsing the JSON every time.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Submission {
+  id           String   @id @default(cuid())
+  status       String   @default("new") // new | in_progress | built | archived
+  businessName String?
+  contactName  String?
+  contactEmail String?
+  data         Json // the full collectText() payload from the form
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}

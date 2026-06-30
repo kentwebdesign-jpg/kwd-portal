@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Project Onboarding | Kent Web Design</title>
+  <meta name="description" content="Tell us about your business so we can build your website. A quick step-by-step brief — most people finish in 10–15 minutes.">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#0e7c7b">
+  <link rel="icon" type="image/png" href="/brief/assets/img/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Inter:wght@400;500;600&family=Poppins:wght@500;600&family=Oswald:wght@500;600&family=Playfair+Display:wght@500;600&family=Montserrat:wght@500;600&family=Lora:wght@500;600&family=Bebas+Neue&family=Space+Grotesk:wght@500;600&family=Cormorant+Garamond:wght@500;600&family=Nunito:wght@600;700&family=Archivo:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/brief/css/onboarding.css">
+</head>
+<body>
+
+<!-- ============ HEADER ============ -->
+<header class="ob-header">
+  <div class="bar">
+    <a class="logo" href="https://kentwebdesign.com/" aria-label="Kent Web Design home">
+      <img src="/brief/assets/img/logo-white.png" alt="Kent Web Design" width="120" height="32">
+    </a>
+    <span class="save-pill" id="savePill" aria-live="polite" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+      Progress saved
+    </span>
+  </div>
+</header>
+
+<!-- ============ PROGRESS ============ -->
+<div class="ob-progress" id="progressBar">
+  <div class="wrap">
+    <div class="meta">
+      <span class="step-label" id="stepLabel">Welcome</span>
+      <span class="count" id="stepCount">Step 1 of 12</span>
+    </div>
+    <div class="track"><div class="fill" id="trackFill"></div></div>
+  </div>
+</div>
+
+<!-- ============ MAIN ============ -->
+<main class="ob-main" id="obMain">
+
+  <!-- Stepper (desktop) -->
+  <nav class="stepper" id="stepper" aria-label="Form sections"></nav>
+
+  <!-- Steps -->
+  <form class="steps" id="obForm" novalidate>
+
+    <!-- STEP 0 — Welcome -->
+    <section class="step is-active" data-step="0" data-title="Welcome">
+      <span class="eyebrow">Project onboarding</span>
+      <h2>Let's build your website.</h2>
+      <p class="intro">Thanks for coming on board. This short brief is how we get everything we need to design and build your site — your brand, your services, your photos and the words that make it sound like <em>you</em>.</p>
+      <div class="fields">
+        <p class="intro" style="margin-top:0">It takes most people <strong>10–15 minutes</strong>. We go one step at a time, and your answers save automatically — so you can stop and come back any time on this device. Anything marked <span class="req" style="font-size:1rem">●</span> we really need; everything else is optional.</p>
+        <div class="field" data-key="contact_name" data-required>
+          <label class="label" for="contact_name">Your name<span class="req">●</span></label>
+          <p class="hint">So we know who we're talking to.</p>
+          <input type="text" id="contact_name" name="contact_name" placeholder="e.g. Sam Taylor" autocomplete="name">
+          <span class="error">Please enter your name.</span>
+        </div>
+        <div class="field" data-key="contact_filling_email" data-required>
+          <label class="label" for="contact_filling_email">Your email<span class="req">●</span></label>
+          <p class="hint">We'll send a copy of this brief here and use it to keep you updated.</p>
+          <input type="email" id="contact_filling_email" name="contact_filling_email" placeholder="you@business.co.uk" autocomplete="email">
+          <span class="error">Please enter a valid email address.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 1 — The basics -->
+    <section class="step" data-step="1" data-title="The basics">
+      <span class="eyebrow">1 · The basics</span>
+      <h2>Tell us about the business.</h2>
+      <p class="intro">The essentials we'll build everything else around.</p>
+      <div class="fields">
+        <div class="field" data-key="business_name" data-required>
+          <label class="label" for="business_name">Business name<span class="req">●</span></label>
+          <p class="hint">Exactly how you want it written — spelling and capitalisation included.</p>
+          <input type="text" id="business_name" name="business_name" placeholder="e.g. Coastline Electrical Ltd">
+          <span class="error">Please enter your business name.</span>
+        </div>
+        <div class="field" data-key="tagline">
+          <label class="label" for="tagline">Tagline / one-liner</label>
+          <p class="hint">A short line that sums you up. Leave blank if you'd like us to write one.</p>
+          <input type="text" id="tagline" name="tagline" placeholder="e.g. Trusted electricians across East Kent">
+        </div>
+        <div class="field" data-key="what_you_do" data-required>
+          <label class="label" for="what_you_do">What does the business do?<span class="req">●</span></label>
+          <p class="hint">In plain English, like you'd explain it to a neighbour.</p>
+          <textarea id="what_you_do" name="what_you_do" placeholder="We're a family-run firm of electricians covering homes and small businesses across Kent — rewires, fuse boards, EV chargers and emergency callouts."></textarea>
+          <span class="error">Please tell us a little about what you do.</span>
+        </div>
+        <div class="field" data-key="established">
+          <label class="label" for="established">Years established</label>
+          <p class="hint">Only if you'd like "since 20XX" shown on the site.</p>
+          <input type="text" id="established" name="established" placeholder="e.g. Since 2009">
+        </div>
+        <div class="field" data-key="primary_goal" data-required>
+          <label class="label">What do you want the site to do?<span class="req">●</span></label>
+          <p class="hint">Tick anything that matters — you can pick more than one.</p>
+          <div class="choice-grid" data-input="checkbox" data-name="primary_goal">
+            <label class="choice" data-type="checkbox"><input type="checkbox" name="primary_goal" value="Get phone calls"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span><span class="t"><b>Get phone calls</b></span></label>
+            <label class="choice" data-type="checkbox"><input type="checkbox" name="primary_goal" value="Enquiry form"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span><span class="t"><b>Get enquiries</b></span></label>
+            <label class="choice" data-type="checkbox"><input type="checkbox" name="primary_goal" value="Online bookings"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span><span class="t"><b>Take bookings</b></span></label>
+            <label class="choice" data-type="checkbox"><input type="checkbox" name="primary_goal" value="Online sales"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span><span class="t"><b>Sell online</b></span></label>
+            <label class="choice" data-type="checkbox"><input type="checkbox" name="primary_goal" value="Look credible"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span><span class="t"><b>Look credible</b></span></label>
+            <label class="choice accent" data-type="checkbox"><input type="checkbox" name="primary_goal" value="Not sure — you decide"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span><span class="t"><b>Not sure</b><small>You decide</small></span></label>
+          </div>
+          <span class="error">Please tick at least one.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 2 — Brand & assets -->
+    <section class="step" data-step="2" data-title="Brand &amp; assets">
+      <span class="eyebrow">2 · Brand &amp; assets</span>
+      <h2>Your logo, colours &amp; photos.</h2>
+      <p class="intro">The raw materials that make the site look like your brand. Real photos make the biggest difference.</p>
+      <div class="fields">
+        <div class="field" data-key="logo" data-required data-file>
+          <label class="label">Logo file<span class="req">●</span></label>
+          <p class="hint">Best quality you have — a transparent PNG, or an SVG/AI vector file is ideal. Don't worry if it's not perfect, just send what you've got.</p>
+          <label class="drop" data-drop="logo">
+            <svg class="up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
+            <b>Tap to upload your logo</b>
+            <small>PNG, SVG, AI, PDF or JPG</small>
+            <input type="file" data-fileinput="logo" accept=".png,.svg,.ai,.pdf,.jpg,.jpeg,.eps">
+          </label>
+          <div class="filelist" data-filelist="logo"></div>
+          <span class="error">Please upload your logo (or your best version of it).</span>
+        </div>
+        <div class="field" data-key="brand_colours">
+          <label class="label">Brand colours</label>
+          <p class="hint">Tap the colours you'd like for your site — pick as many as you like. Not fussed? Tick the box and we'll take them straight from your logo.</p>
+          <input type="hidden" id="brand_colours" name="brand_colours">
+          <div class="colourpick" data-colourpick>
+            <div class="palette" data-palette></div>
+            <div class="picked" data-picked></div>
+          </div>
+          <label class="assist"><input type="checkbox" data-colourpull> Just pull the colours from my logo</label>
+          <p class="pull-msg" data-pullmsg hidden></p>
+        </div>
+        <div class="field" data-key="brand_guidelines" data-file>
+          <label class="label">Any other brand assets</label>
+          <p class="hint">Optional — anything else that's part of your brand: an icon, a pattern, a brand guide, letterhead, a vehicle wrap photo, etc.</p>
+          <label class="drop" data-drop="brand_guidelines">
+            <svg class="up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
+            <b>Tap to upload (optional)</b>
+            <small>Images, PDF or docs — pick several</small>
+            <input type="file" data-fileinput="brand_guidelines" multiple>
+          </label>
+          <div class="filelist" data-filelist="brand_guidelines"></div>
+        </div>
+        <div class="field" data-key="photos" data-file>
+          <label class="label">Photos of your work &amp; products</label>
+          <p class="hint">Real photos of your work, products, team, premises or vans that you'd like to see on your website. More is better — you can pick several at once. (No photos yet? That's OK — we'll talk about options.)</p>
+          <label class="drop" data-drop="photos">
+            <svg class="up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
+            <b>Tap to upload photos</b>
+            <small>Select multiple JPG / PNG / HEIC</small>
+            <input type="file" data-fileinput="photos" accept="image/*,.heic" multiple>
+          </label>
+          <div class="filelist" data-filelist="photos"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 3 — Look & feel -->
+    <section class="step" data-step="3" data-title="Look &amp; feel">
+      <span class="eyebrow">3 · Look &amp; feel</span>
+      <h2>The style you're after.</h2>
+      <p class="intro">Don't overthink these — go with your gut. "Not sure" is a perfectly good answer; it just means we'll choose for you.</p>
+      <div class="fields">
+        <div class="field" data-key="sample_designs">
+          <label class="label">Which of these do you like the look of?</label>
+          <p class="hint">A few sample styles we build in. Tap any that feel right for you — pick as many as you like. There are no wrong answers; it just gives us a feel for your taste.</p>
+          <div class="sample-grid" data-input="checkbox" data-name="sample_designs">
+            <label class="sample"><input type="checkbox" name="sample_designs" value="Clean & editorial">
+              <span class="pic"><span class="mock editorial"><span class="bar"><i></i><i></i><i></i></span><span class="h"></span><span class="t"></span><span class="t s"></span><span class="row"><span></span><span></span></span><span class="pill"></span></span></span>
+              <span class="cap"><span><b>Aspect</b><small>Clean &amp; editorial</small></span><span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span></span></label>
+            <label class="sample"><input type="checkbox" name="sample_designs" value="Bold & punchy">
+              <span class="pic"><span class="mock bold"><span class="bar"><i></i><i></i><i></i></span><span class="h"></span><span class="t"></span><span class="t s"></span><span class="row"><span></span><span></span></span><span class="pill"></span></span></span>
+              <span class="cap"><span><b>Forge</b><small>Bold &amp; punchy</small></span><span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span></span></label>
+            <label class="sample"><input type="checkbox" name="sample_designs" value="Warm & friendly">
+              <span class="pic"><span class="mock warm"><span class="bar"><i></i><i></i><i></i></span><span class="h"></span><span class="t"></span><span class="t s"></span><span class="row"><span></span><span></span></span><span class="pill"></span></span></span>
+              <span class="cap"><span><b>Hearth</b><small>Warm &amp; friendly</small></span><span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span></span></label>
+            <label class="sample"><input type="checkbox" name="sample_designs" value="Minimal">
+              <span class="pic"><span class="mock minimal"><span class="bar"><i></i><i></i><i></i></span><span class="h"></span><span class="t"></span><span class="t s"></span><span class="row"><span></span><span></span></span><span class="pill"></span></span></span>
+              <span class="cap"><span><b>Mono</b><small>Minimal</small></span><span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span></span></label>
+            <label class="sample"><input type="checkbox" name="sample_designs" value="Corporate / trust">
+              <span class="pic"><span class="mock corporate"><span class="bar"><i></i><i></i><i></i></span><span class="h"></span><span class="t"></span><span class="t s"></span><span class="row"><span></span><span></span></span><span class="pill"></span></span></span>
+              <span class="cap"><span><b>Meridian</b><small>Corporate &amp; trust</small></span><span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span></span></label>
+            <label class="sample"><input type="checkbox" name="sample_designs" value="Trade & local">
+              <span class="pic"><span class="mock trade"><span class="bar"><i></i><i></i><i></i></span><span class="h"></span><span class="t"></span><span class="t s"></span><span class="row"><span></span><span></span></span><span class="pill"></span></span></span>
+              <span class="cap"><span><b>Groundwork</b><small>Trade &amp; local</small></span><span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span></span></label>
+          </div>
+        </div>
+        <div class="field" data-key="sites_you_like">
+          <label class="label" for="sites_you_like">Any websites you love?</label>
+          <p class="hint">Optional — paste any sites you like (rivals, big brands, anything) and a word on why. It really helps.</p>
+          <textarea id="sites_you_like" name="sites_you_like" placeholder="apple.com — love how clean and calm it feels&#10;a-rival-builder.co.uk — like the big photos"></textarea>
+        </div>
+        <div class="field" data-key="sites_you_dislike">
+          <label class="label" for="sites_you_dislike">Anything you dislike?</label>
+          <p class="hint">Optional — sites or styles to steer away from.</p>
+          <textarea id="sites_you_dislike" name="sites_you_dislike" placeholder="Anything that feels cluttered or dated…"></textarea>
+        </div>
+        <div class="field" data-key="style_leaning">
+          <label class="label">Style leaning</label>
+          <div class="choice-grid" data-input="radio" data-name="style_leaning">
+            <label class="choice" data-type="radio"><input type="radio" name="style_leaning" value="Clean & editorial"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span><span class="t"><b>Clean &amp; editorial</b></span></label>
+            <label class="choice" data-type="radio"><input type="radio" name="style_leaning" value="Bold & punchy"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span><span class="t"><b>Bold &amp; punchy</b></span></label>
+            <label class="choice" data-type="radio"><input type="radio" name="style_leaning" value="Warm & friendly"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span><span class="t"><b>Warm &amp; friendly</b></span></label>
+            <label class="choice" data-type="radio"><input type="radio" name="style_leaning" value="Minimal"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span><span class="t"><b>Minimal</b></span></label>
+            <label class="choice" data-type="radio"><input type="radio" name="style_leaning" value="Corporate / trust"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span><span class="t"><b>Corporate / trust</b></span></label>
+            <label class="choice accent" data-type="radio"><input type="radio" name="style_leaning" value="Not sure — you decide"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span><span class="t"><b>Not sure</b><small>You decide</small></span></label>
+          </div>
+        </div>
+        <div class="field" data-key="font_personality">
+          <label class="label">Pick a font you like the feel of</label>
+          <p class="hint">This is the actual lettering — go with whichever just feels like you.</p>
+          <div class="font-grid" data-input="radio" data-name="font_personality">
+            <label class="fontcard"><input type="radio" name="font_personality" value="Fraunces — classic & elegant">
+              <span class="samp" style="font-family:'Fraunces',serif">Your business</span>
+              <span class="nm">Classic &amp; elegant <span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span></span></label>
+            <label class="fontcard"><input type="radio" name="font_personality" value="Inter — modern & clean">
+              <span class="samp" style="font-family:'Inter',sans-serif;font-weight:600">Your business</span>
+              <span class="nm">Modern &amp; clean <span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span></span></label>
+            <label class="fontcard"><input type="radio" name="font_personality" value="Poppins — friendly & rounded">
+              <span class="samp" style="font-family:'Poppins',sans-serif;font-weight:600">Your business</span>
+              <span class="nm">Friendly &amp; rounded <span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span></span></label>
+            <label class="fontcard"><input type="radio" name="font_personality" value="Oswald — strong & bold">
+              <span class="samp" style="font-family:'Oswald',sans-serif;text-transform:uppercase;letter-spacing:.02em">Your business</span>
+              <span class="nm">Strong &amp; bold <span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span></span></label>
+            <label class="fontcard"><input type="radio" name="font_personality" value="Playfair — luxury & refined">
+              <span class="samp" style="font-family:'Playfair Display',serif">Your business</span>
+              <span class="nm">Luxury &amp; refined <span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span></span></label>
+            <label class="fontcard"><input type="radio" name="font_personality" value="Montserrat — geometric & confident">
+              <span class="samp" style="font-family:'Montserrat',sans-serif;font-weight:600">Your business</span>
+              <span class="nm">Geometric &amp; confident <span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span></span></label>
+            <label class="fontcard"><input type="radio" name="font_personality" value="Lora — warm & traditional">
+              <span class="samp" style="font-family:'Lora',serif">Your business</span>
+              <span class="nm">Warm &amp; traditional <span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span></span></label>
+            <label class="fontcard"><input type="radio" name="font_personality" value="Bebas Neue — tall & impactful">
+              <span class="samp" style="font-family:'Bebas Neue',sans-serif;letter-spacing:.04em;font-size:1.9rem">Your Business</span>
+              <span class="nm">Tall &amp; impactful <span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span></span></label>
+            <label class="fontcard"><input type="radio" name="font_personality" value="Space Grotesk — techy & sharp">
+              <span class="samp" style="font-family:'Space Grotesk',sans-serif;font-weight:600">Your business</span>
+              <span class="nm">Techy &amp; sharp <span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span></span></label>
+            <label class="fontcard"><input type="radio" name="font_personality" value="Cormorant — high-end & editorial">
+              <span class="samp" style="font-family:'Cormorant Garamond',serif;font-size:1.75rem">Your business</span>
+              <span class="nm">High-end &amp; editorial <span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span></span></label>
+            <label class="fontcard"><input type="radio" name="font_personality" value="Nunito — soft & approachable">
+              <span class="samp" style="font-family:'Nunito',sans-serif;font-weight:700">Your business</span>
+              <span class="nm">Soft &amp; approachable <span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span></span></label>
+            <label class="fontcard"><input type="radio" name="font_personality" value="Archivo — bold & contemporary">
+              <span class="samp" style="font-family:'Archivo',sans-serif;font-weight:700">Your business</span>
+              <span class="nm">Bold &amp; contemporary <span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span></span></label>
+            <label class="fontcard"><input type="radio" name="font_personality" value="Not sure — you choose">
+              <span class="samp" style="font-family:'Inter',sans-serif;color:var(--slate)">Not sure</span>
+              <span class="nm">You choose for me <span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span></span></label>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 4 — What you offer -->
+    <section class="step" data-step="4" data-title="What you offer">
+      <span class="eyebrow">4 · What you offer</span>
+      <h2>Your services &amp; products.</h2>
+      <p class="intro">List what you sell. A one-line description each is plenty — we'll expand them.</p>
+      <div class="fields">
+        <div class="field" data-key="services" data-required data-repeat="services">
+          <label class="label">Your services / products<span class="req">●</span></label>
+          <p class="hint">Add a row for each. Name on the left, a short description on the right.</p>
+          <div class="repeat" data-repeatlist="services"></div>
+          <button type="button" class="add-row" data-addrow="services">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            Add a service / product
+          </button>
+          <span class="error">Please add at least one service or product.</span>
+        </div>
+        <div class="field" data-key="pricing">
+          <label class="label">Pricing approach</label>
+          <p class="hint">How would you like prices shown?</p>
+          <div class="choice-grid" data-input="radio" data-name="pricing">
+            <label class="choice" data-type="radio"><input type="radio" name="pricing" value="Show prices"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span><span class="t"><b>Show prices</b><small>I'll provide them</small></span></label>
+            <label class="choice" data-type="radio"><input type="radio" name="pricing" value="From £X"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span><span class="t"><b>"From £X"</b></span></label>
+            <label class="choice" data-type="radio"><input type="radio" name="pricing" value="No prices — enquiry only"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span><span class="t"><b>No prices</b><small>Enquiry only</small></span></label>
+            <label class="choice accent" data-type="radio"><input type="radio" name="pricing" value="Not sure — you decide"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span><span class="t"><b>Not sure</b><small>You decide</small></span></label>
+          </div>
+          <div class="reveal" data-revealfor="pricing" data-revealwhen="Show prices,From £X">
+            <div class="field" data-key="pricing_detail" style="margin-top:14px">
+              <label class="label" for="pricing_detail">Your prices</label>
+              <p class="hint">Pop your prices or "from" figures here.</p>
+              <textarea id="pricing_detail" name="pricing_detail" placeholder="Fuse board upgrade — from £450&#10;EV charger install — from £900"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 5 — Proof & trust -->
+    <section class="step" data-step="5" data-title="Proof &amp; trust">
+      <span class="eyebrow">5 · Proof &amp; trust</span>
+      <h2>Reviews &amp; credentials.</h2>
+      <p class="intro">This is the stuff that wins customers — and we'll never invent it. Only add what's genuinely real.</p>
+      <div class="fields">
+        <div class="field" data-key="reviews_choice" data-required>
+          <label class="label">Reviews / testimonials<span class="req">●</span></label>
+          <p class="hint">How should we handle these?</p>
+          <div class="choice-grid" data-input="radio" data-name="reviews_choice">
+            <label class="choice" data-type="radio"><input type="radio" name="reviews_choice" value="Paste a few"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span><span class="t"><b>I'll paste a few</b><small>Quote + name + town</small></span></label>
+            <label class="choice" data-type="radio"><input type="radio" name="reviews_choice" value="Use my Google reviews"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span><span class="t"><b>Use my Google reviews</b><small>I'll link my profile</small></span></label>
+            <label class="choice accent" data-type="radio"><input type="radio" name="reviews_choice" value="None yet"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span><span class="t"><b>None yet</b><small>Not sure</small></span></label>
+          </div>
+          <span class="error">Please choose one.</span>
+          <div class="reveal" data-revealfor="reviews_choice" data-revealwhen="Paste a few">
+            <div class="field" data-key="reviews_pasted" style="margin-top:14px">
+              <label class="label" for="reviews_pasted">Paste your reviews</label>
+              <p class="hint">One per line works well — the quote, the customer's name, and their town.</p>
+              <textarea id="reviews_pasted" name="reviews_pasted" placeholder='"Brilliant job, turned up on time and tidied up after." — Jane M, Whitstable'></textarea>
+            </div>
+          </div>
+          <div class="reveal" data-revealfor="reviews_choice" data-revealwhen="Use my Google reviews">
+            <div class="field" data-key="google_business_name" style="margin-top:14px">
+              <label class="label" for="google_business_name">Great — what's the business name on Google?</label>
+              <p class="hint">No link needed. Just the name (and town) you're listed under and we'll find your reviews.</p>
+              <input type="text" id="google_business_name" name="google_business_name" placeholder="e.g. Coastline Electrical, Maidstone">
+            </div>
+          </div>
+        </div>
+        <div class="field" data-key="google_rating">
+          <label class="label" for="google_rating">Google rating + number of reviews</label>
+          <p class="hint">Only if it's real, e.g. "4.9 from 87 reviews" — or leave it blank and we'll look it up.</p>
+          <input type="text" id="google_rating" name="google_rating" placeholder="4.9 ★ from 87 reviews — or leave blank">
+        </div>
+        <div class="field" data-key="accreditations">
+          <label class="label" for="accreditations">Accreditations / memberships</label>
+          <p class="hint">NICEIC, Gas Safe, CHAS, Checkatrade, etc. Leave blank or type "none" if none.</p>
+          <input type="text" id="accreditations" name="accreditations" placeholder="NICEIC Approved, Gas Safe #123456">
+        </div>
+        <div class="field" data-key="guarantees">
+          <label class="label" for="guarantees">Guarantees</label>
+          <p class="hint">Free quotes, no call-out charge, warranties — anything you promise.</p>
+          <input type="text" id="guarantees" name="guarantees" placeholder="Free no-obligation quotes · 12-month workmanship guarantee">
+        </div>
+        <div class="field" data-key="real_numbers">
+          <label class="label" for="real_numbers">Any real numbers</label>
+          <p class="hint">Jobs done, years in trade, average response time — figures that build trust.</p>
+          <input type="text" id="real_numbers" name="real_numbers" placeholder="2,000+ jobs completed · usually respond within 1 hour">
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 6 — Words -->
+    <section class="step" data-step="6" data-title="Words">
+      <span class="eyebrow">6 · Words</span>
+      <h2>Your story &amp; FAQs.</h2>
+      <p class="intro">Your own words always sound best — but if writing isn't your thing, tick "write it for me" and we'll handle it.</p>
+      <div class="fields">
+        <div class="field" data-key="about_story">
+          <label class="label" for="about_story">About / your story</label>
+          <p class="hint">A paragraph in your words — how you started, what you care about, why people choose you.</p>
+          <textarea id="about_story" name="about_story" placeholder="We started out in 2009 as a two-man team and have grown by word of mouth ever since…"></textarea>
+          <label class="assist"><input type="checkbox" data-assist="about_story" name="about_story_writeforme" value="Write it for me"> Not sure what to say — write it for me</label>
+        </div>
+        <div class="field" data-key="faqs" data-repeat="faqs">
+          <label class="label">Common questions customers ask</label>
+          <p class="hint">Great for the FAQ section. Add the questions you get asked a lot — leave the answers to us if you like.</p>
+          <div class="repeat" data-repeatlist="faqs"></div>
+          <button type="button" class="add-row" data-addrow="faqs">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            Add a question
+          </button>
+          <label class="assist"><input type="checkbox" data-assist-plain="faqs_suggest" name="faqs_suggest" value="Suggest some for me"> Not sure — suggest some for me</label>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 7 — Local & SEO -->
+    <section class="step" data-step="7" data-title="Local &amp; SEO">
+      <span class="eyebrow">7 · Local &amp; SEO</span>
+      <h2>Getting found locally.</h2>
+      <p class="intro">This is how we make Google send the right people your way.</p>
+      <div class="fields">
+        <div class="field" data-key="areas_covered" data-required>
+          <label class="label" for="areas_covered">Areas / towns you cover<span class="req">●</span></label>
+          <p class="hint">List the towns and areas you serve — the more specific, the better for local search.</p>
+          <textarea id="areas_covered" name="areas_covered" placeholder="Maidstone, Medway, Sittingbourne, Faversham and surrounding villages — roughly 20 miles."></textarea>
+          <span class="error">Please tell us the areas you cover.</span>
+        </div>
+        <div class="field" data-key="search_term">
+          <label class="label" for="search_term">Main thing people search to find you</label>
+          <p class="hint">e.g. "electrician Margate". Not sure? Leave it and we'll research it.</p>
+          <input type="text" id="search_term" name="search_term" placeholder="e.g. electrician Maidstone">
+        </div>
+        <div class="field" data-key="competitors">
+          <label class="label" for="competitors">Local competitors</label>
+          <p class="hint">Knowing your rivals helps us make you stand out. Just their names is plenty — a website link too if you have it handy.</p>
+          <textarea id="competitors" name="competitors" placeholder="Acme Electrical&#10;Bright Spark Kent&#10;(links optional)"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 8 — Features needed -->
+    <section class="step" data-step="8" data-title="Features needed">
+      <span class="eyebrow">8 · Features needed</span>
+      <h2>What the site should do.</h2>
+      <p class="intro">Tick anything you'd like. Unsure? Tick the last one and we'll recommend the right setup.</p>
+      <div class="fields">
+        <div class="field" data-key="features">
+          <label class="label">Features</label>
+          <div class="choice-grid" data-input="checkbox" data-name="features">
+            <label class="choice" data-type="checkbox"><input type="checkbox" name="features" value="Contact form"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span><span class="t"><b>Contact form</b></span></label>
+            <label class="choice" data-type="checkbox"><input type="checkbox" name="features" value="Online booking"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span><span class="t"><b>Online booking</b></span></label>
+            <label class="choice" data-type="checkbox"><input type="checkbox" name="features" value="Gallery"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span><span class="t"><b>Gallery</b></span></label>
+            <label class="choice" data-type="checkbox"><input type="checkbox" name="features" value="Online shop"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span><span class="t"><b>Online shop</b></span></label>
+            <label class="choice" data-type="checkbox"><input type="checkbox" name="features" value="WhatsApp button"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span><span class="t"><b>WhatsApp button</b></span></label>
+            <label class="choice" data-type="checkbox"><input type="checkbox" name="features" value="Map"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span><span class="t"><b>Map</b></span></label>
+            <label class="choice" data-type="checkbox"><input type="checkbox" name="features" value="Blog"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span><span class="t"><b>Blog</b></span></label>
+            <label class="choice" data-type="checkbox"><input type="checkbox" name="features" value="Multi-page"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span><span class="t"><b>Multi-page</b></span></label>
+            <label class="choice" data-type="checkbox"><input type="checkbox" name="features" value="One-pager"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span><span class="t"><b>One-pager</b></span></label>
+            <label class="choice" data-type="checkbox"><input type="checkbox" name="features" value="Reviews / testimonials"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span><span class="t"><b>Reviews section</b></span></label>
+            <label class="choice" data-type="checkbox"><input type="checkbox" name="features" value="Before & after gallery"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span><span class="t"><b>Before &amp; after</b></span></label>
+            <label class="choice" data-type="checkbox"><input type="checkbox" name="features" value="Call-back / quote request"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span><span class="t"><b>Quote request</b></span></label>
+            <label class="choice" data-type="checkbox"><input type="checkbox" name="features" value="Click-to-call button"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span><span class="t"><b>Click-to-call</b></span></label>
+            <label class="choice" data-type="checkbox"><input type="checkbox" name="features" value="Live chat"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span><span class="t"><b>Live chat</b></span></label>
+            <label class="choice" data-type="checkbox"><input type="checkbox" name="features" value="Newsletter signup"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span><span class="t"><b>Newsletter signup</b></span></label>
+            <label class="choice" data-type="checkbox"><input type="checkbox" name="features" value="Social media feed"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span><span class="t"><b>Social feed</b></span></label>
+            <label class="choice" data-type="checkbox"><input type="checkbox" name="features" value="Online payments"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span><span class="t"><b>Online payments</b></span></label>
+            <label class="choice" data-type="checkbox"><input type="checkbox" name="features" value="Service area map"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span><span class="t"><b>Service-area map</b></span></label>
+            <label class="choice" data-type="checkbox"><input type="checkbox" name="features" value="Finance / pay monthly"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span><span class="t"><b>Finance options</b></span></label>
+            <label class="choice accent" data-type="checkbox"><input type="checkbox" name="features" value="Not sure — you recommend"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span><span class="t"><b>Not sure</b><small>You recommend</small></span></label>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 9 — Contact & practical -->
+    <section class="step" data-step="9" data-title="Contact &amp; practical">
+      <span class="eyebrow">9 · Contact &amp; practical</span>
+      <h2>How people reach you.</h2>
+      <p class="intro">The details that go on the site and where your enquiries should land.</p>
+      <div class="fields">
+        <div class="row-2">
+          <div class="field" data-key="phone" data-required>
+            <label class="label" for="phone">Phone<span class="req">●</span></label>
+            <p class="hint">The number to show on the site.</p>
+            <input type="tel" id="phone" name="phone" placeholder="01622 000000" autocomplete="tel">
+            <span class="error">Please enter a contact phone number.</span>
+          </div>
+          <div class="field" data-key="public_email" data-required>
+            <label class="label" for="public_email">Email<span class="req">●</span></label>
+            <p class="hint">The email to show publicly.</p>
+            <input type="email" id="public_email" name="public_email" placeholder="hello@business.co.uk">
+            <span class="error">Please enter a valid email.</span>
+          </div>
+        </div>
+        <div class="field" data-key="address">
+          <label class="label" for="address">Address</label>
+          <p class="hint">Your address — or type "area-based, no address" if you work from home / on-site.</p>
+          <input type="text" id="address" name="address" placeholder="12 High Street, Maidstone, ME14 1AB — or 'area-based, no address'">
+        </div>
+        <div class="field" data-key="opening_hours">
+          <label class="label" for="opening_hours">Opening hours</label>
+          <input type="text" id="opening_hours" name="opening_hours" placeholder="Mon–Fri 8am–6pm · Sat 9am–1pm · emergencies 24/7">
+        </div>
+        <div class="field" data-key="whatsapp">
+          <label class="label" for="whatsapp">WhatsApp mobile</label>
+          <p class="hint">Only if different from your landline — or leave blank for none.</p>
+          <input type="tel" id="whatsapp" name="whatsapp" placeholder="07700 000000">
+        </div>
+        <div class="field" data-key="socials">
+          <label class="label" for="socials">Social links</label>
+          <p class="hint">Instagram, Facebook, Google Business Profile — paste any you have.</p>
+          <textarea id="socials" name="socials" placeholder="instagram.com/yourbusiness&#10;facebook.com/yourbusiness"></textarea>
+        </div>
+        <div class="field" data-key="enquiry_email" data-required>
+          <label class="label" for="enquiry_email">Where should enquiry-form emails go?<span class="req">●</span></label>
+          <p class="hint">When someone fills in your contact form, which inbox should it land in?</p>
+          <input type="email" id="enquiry_email" name="enquiry_email" placeholder="enquiries@business.co.uk">
+          <span class="error">Please tell us where enquiries should go.</span>
+        </div>
+        <div class="field" data-key="domain">
+          <label class="label" for="domain">Domain &amp; hosting</label>
+          <p class="hint">Do you have a domain (e.g. yourbusiness.co.uk)? Who hosts it? Or "not sure / need one".</p>
+          <input type="text" id="domain" name="domain" placeholder="yourbusiness.co.uk — hosted with GoDaddy — or 'need one'">
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 10 — Logistics -->
+    <section class="step" data-step="10" data-title="Logistics">
+      <span class="eyebrow">10 · Logistics</span>
+      <h2>Anything else?</h2>
+      <p class="intro">Last one — all optional. Anything on your mind that we haven't asked about.</p>
+      <div class="fields">
+        <div class="field" data-key="deadline">
+          <label class="label" for="deadline">Deadline</label>
+          <p class="hint">Any date you're working towards? An event, a launch, end of a quiet season…</p>
+          <input type="text" id="deadline" name="deadline" placeholder="e.g. live before the summer">
+        </div>
+        <div class="field" data-key="avoid">
+          <label class="label" for="avoid">Anything to avoid</label>
+          <input type="text" id="avoid" name="avoid" placeholder="e.g. please no stock photos of handshakes">
+        </div>
+        <div class="field" data-key="anything_else">
+          <label class="label" for="anything_else">Anything else we should know</label>
+          <textarea id="anything_else" name="anything_else" placeholder="Anything at all…"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 11 — Review -->
+    <section class="step" data-step="11" data-title="Review &amp; send">
+      <span class="eyebrow">11 · Almost done</span>
+      <h2>Check it over &amp; send.</h2>
+      <p class="intro">Here's everything you've told us. Edit any section if you need to, then send it our way.</p>
+      <div class="fields">
+        <div id="reviewOut"></div>
+        <label class="consent">
+          <input type="checkbox" id="consent">
+          <span>I'm happy for Kent Web Design to use these details, files and any reviews provided to build my website. Everything I've marked as a review or accreditation is genuine.</span>
+        </label>
+      </div>
+    </section>
+
+  </form>
+
+  <!-- Success screen -->
+  <div class="done-screen" id="doneScreen">
+    <div class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+    <h2>Brilliant — that's everything.</h2>
+    <p>Thanks <span id="doneName">!</span> Your brief is with us. We'll have a read through and be in touch shortly — and you'll get a copy in your inbox.</p>
+    <p style="margin-top:26px"><a class="btn btn-line" href="https://kentwebdesign.com/">Back to our website</a></p>
+  </div>
+
+</main>
+
+<!-- ============ FOOTER NAV ============ -->
+<div class="ob-foot" id="obFoot">
+  <div class="wrap">
+    <button type="button" class="btn btn-ghost" id="backBtn" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Back
+    </button>
+    <span class="foot-hint" id="footHint">Your answers save as you go</span>
+    <button type="button" class="btn btn-accent" id="nextBtn">
+      Continue
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- Submit overlay -->
+<div class="overlay" id="overlay" aria-live="assertive">
+  <div class="card" id="overlayCard"></div>
+</div>
+
+<script src="/brief/js/onboarding.js" defer></script>
+</body>
+</html>
