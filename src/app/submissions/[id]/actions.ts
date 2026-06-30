@@ -4,7 +4,7 @@ import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { getViewer } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { createSiteFromTemplate } from "@/lib/instawp";
+import { createSite } from "@/lib/instawp";
 
 // Admin-only: provision a WordPress site for this brief via InstaWP.
 export async function buildSite(formData: FormData) {
@@ -12,15 +12,13 @@ export async function buildSite(formData: FormData) {
   if (!isAdmin) throw new Error("Not authorised.");
 
   const id = String(formData.get("id") ?? "");
-  const templateSlug = String(formData.get("template_slug") ?? "").trim();
-  if (!id || !templateSlug) return;
+  if (!id) return;
 
   const submission = await prisma.submission.findUnique({ where: { id } });
   if (!submission) return;
 
   try {
-    const site = await createSiteFromTemplate({
-      templateSlug,
+    const site = await createSite({
       siteName: submission.businessName ?? undefined,
     });
     await prisma.submission.update({

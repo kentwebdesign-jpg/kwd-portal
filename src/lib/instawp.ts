@@ -11,15 +11,13 @@ export type InstaWpSite = {
   is_pool?: boolean;
 };
 
-export async function createSiteFromTemplate(opts: {
-  templateSlug: string;
-  siteName?: string;
-  isShared?: boolean;
-}): Promise<InstaWpSite> {
+// Provision a fresh WordPress site (no template needed — InstaWP serves one
+// from its pool, ready in seconds).
+export async function createSite(opts: { siteName?: string }): Promise<InstaWpSite> {
   const token = process.env.INSTAWP_API_TOKEN;
   if (!token) throw new Error("INSTAWP_API_TOKEN is not set.");
 
-  const res = await fetch(`${INSTAWP_BASE}/sites/template`, {
+  const res = await fetch(`${INSTAWP_BASE}/sites`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -27,10 +25,8 @@ export async function createSiteFromTemplate(opts: {
       Accept: "application/json",
     },
     body: JSON.stringify({
-      template_slug: opts.templateSlug,
-      site_name: opts.siteName,
+      ...(opts.siteName ? { site_name: opts.siteName } : {}),
       is_reserved: true,
-      ...(opts.isShared ? { is_shared: true } : {}),
     }),
   });
 

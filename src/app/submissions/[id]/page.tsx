@@ -154,24 +154,18 @@ export default async function SubmissionDetail({
           </p>
         ) : null}
 
-        <form action={buildSite} style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+        <form action={buildSite}>
           <input type="hidden" name="id" value={submission.id} />
-          <input
-            name="template_slug"
-            required
-            placeholder="InstaWP template slug"
-            style={{ flex: 1, minWidth: 200, padding: "9px 12px", borderRadius: 8, border: "1px solid #ddd", fontSize: 14 }}
-          />
           <button
             type="submit"
-            style={{ background: "#0e7c7b", color: "#fff", border: "none", borderRadius: 8, padding: "9px 18px", fontWeight: 600, cursor: "pointer" }}
+            style={{ background: "#0e7c7b", color: "#fff", border: "none", borderRadius: 8, padding: "10px 20px", fontWeight: 600, cursor: "pointer" }}
           >
-            {submission.buildStatus === "ready" ? "Rebuild" : "Build site"}
+            {submission.buildStatus === "ready" ? "Rebuild site" : "Build site"}
           </button>
         </form>
         <p style={{ color: "#aaa", fontSize: 12, margin: "8px 0 0" }}>
-          Enter the InstaWP template slug to clone for this client. Image generation and content
-          population come next.
+          Spins up a fresh WordPress site for this client. Image generation and content population
+          come next.
         </p>
       </section>
 
