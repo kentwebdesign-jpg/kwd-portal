@@ -17,19 +17,30 @@ export type InstaWpSite = {
 // provision asynchronously and return empty credentials, which the pipeline
 // can't use). The business name becomes the site title later, via REST.
 export async function createSite(): Promise<InstaWpSite> {
-  const res = await fetch(`${INSTAWP_BASE}/sites`, {
-    method: "POST",
-    headers: instaHeaders(),
-    body: JSON.stringify({}),
-  });
+  const headers = instaHeaders();
 
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok || json?.status === false) {
-    throw new Error(json?.message || `InstaWP error (HTTP ${res.status})`);
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const res = await fetch(`${INSTAWP_BASE}/sites`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({}),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || json?.status === false) {
+      throw new Error(json?.message || `InstaWP error (HTTP ${res.status})`);
+    }
+
+    const site = (json.data ?? json) as InstaWpSite;
+    // A ready pooled site has credentials; an async one comes back empty.
+    if (site.wp_username && site.wp_password) return site;
+
+    // Discard the still-provisioning site and try for a ready one.
+    if (site.id) {
+      await fetch(`${INSTAWP_BASE}/sites/${site.id}`, { method: "DELETE", headers }).catch(() => {});
+    }
   }
 
-  // InstaWP wraps the payload in { status, message, data: {...} }.
-  return (json.data ?? json) as InstaWpSite;
+  throw new Error("InstaWP only returned sites still provisioning (no credentials). Try again shortly.");
 }
 
 function instaHeaders() {
