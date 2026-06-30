@@ -12,33 +12,15 @@ export type InstaWpSite = {
   is_pool?: boolean;
 };
 
-// Provision a fresh WordPress site (no template needed — InstaWP serves one
-// from its pool, ready in seconds).
-export async function createSite(opts: { siteName?: string }): Promise<InstaWpSite> {
-  const token = process.env.INSTAWP_API_TOKEN;
-  if (!token) throw new Error("INSTAWP_API_TOKEN is not set.");
-
-  // InstaWP only allows a-z A-Z 0-9 and - in the site name, and subdomains must
-  // be globally unique — so append a short random suffix.
-  const base = (opts.siteName ?? "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 32);
-  const suffix = Math.random().toString(36).slice(2, 6);
-  const safeName = base ? `${base}-${suffix}` : "";
-
+// Provision a fresh WordPress site. A plain create returns a pooled site that
+// is ready instantly with login credentials filled (named/reserved sites
+// provision asynchronously and return empty credentials, which the pipeline
+// can't use). The business name becomes the site title later, via REST.
+export async function createSite(): Promise<InstaWpSite> {
   const res = await fetch(`${INSTAWP_BASE}/sites`, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify({
-      ...(safeName ? { site_name: safeName } : {}),
-      is_reserved: true,
-    }),
+    headers: instaHeaders(),
+    body: JSON.stringify({}),
   });
 
   const json = await res.json().catch(() => ({}));

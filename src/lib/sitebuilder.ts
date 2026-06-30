@@ -75,7 +75,7 @@ export type BuildResult = {
 };
 
 export async function buildClientSite(data: Brief, opts: { themeUrl: string }): Promise<BuildResult> {
-  const site = await createSite({ siteName: txt(data.business_name) });
+  const site = await createSite();
   const siteId = site.id;
   const siteUrl = site.wp_url;
   const adminUser = site.wp_username;
