@@ -1,36 +1,124 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Kent Web Design — Client Portal (`kwd-portal`)
 
-## Getting Started
+A client portal + automated website build pipeline for Kent Web Design.
 
-First, run the development server:
+A client is invited, sets a password, logs in, and completes an onboarding brief.
+From the admin side we review the brief and click **Build site**, which provisions
+a fresh WordPress site, installs our theme, and fills it with pages written by
+Claude from the brief. Clients can also raise change requests once their site is live.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+## The stack
+
+| Piece | What it is | Where |
+|---|---|---|
+| App | Next.js 16 (App Router, TypeScript) | this repo |
+| Hosting | Railway (auto-deploys on push to `main`) | railway.app |
+| Database | PostgreSQL (Prisma ORM v6) | Railway service |
+| Auth | Clerk (invite-only) | clerk.com |
+| File storage | Cloudflare R2 (logos, photos) | Cloudflare |
+| Site provisioning | InstaWP API (creates the WordPress sites) | app.instawp.io |
+| AI copy | Claude API (Opus 4.8) writes the page content | console.anthropic.com |
+
+**Deploy flow:** push to `main` → Railway builds and deploys automatically. There is
+no separate deploy step.
+
+---
+
+## How it fits together
+
+```
+Client                                  Admin (you)
+──────                                  ───────────
+Gets invite email (Clerk)               Invite a client by email (/submissions)
+Sets password, logs in
+Dashboard (/dashboard)                  See all briefs (/submissions)
+  → completes onboarding form (/brief)  Open a brief → see every answer + files
+    (saved to Postgres, files to R2)    Click "Build site":
+Later: raise change requests              1. InstaWP provisions a WordPress site
+                                          2. Installs the KWD theme
+                                          3. Claude writes the page copy from the brief
+                                          4. Creates Home/About/Services/Contact pages
+                                        Manage change requests (/requests)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- **Roles:** an email listed in `ADMIN_EMAILS` is an admin (sees `/submissions`, `/requests`).
+  Everyone else is a client (sees `/dashboard`). Logic in `src/middleware.ts` + `src/lib/auth.ts`.
+- **The onboarding form** is the original static form (`public/brief/` assets +
+  `form/index.html`), served behind login by `src/app/brief/route.ts`. It posts answers
+  to `src/app/api/submit/route.ts`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Key files
 
-## Learn More
+| Path | What |
+|---|---|
+| `prisma/schema.prisma` | DB models: `Submission`, `ChangeRequest` |
+| `src/middleware.ts` | Locks /brief, /dashboard, /submissions, /requests behind login |
+| `src/lib/auth.ts` | `getViewer()` — who's logged in + are they admin |
+| `src/lib/prisma.ts` | DB client |
+| `src/lib/r2.ts` | Cloudflare R2 (presigned upload/download) |
+| `src/lib/instawp.ts` | InstaWP API: create site + run WP-CLI commands |
+| `src/lib/wp.ts` | WordPress REST client (create pages, set options) |
+| `src/lib/ai.ts` | Claude call that writes the site copy from the brief |
+| `src/lib/sitebuilder.ts` | Orchestrates the whole build pipeline |
+| `src/app/api/submit/route.ts` | Receives a completed brief, saves it |
+| `src/app/api/upload-url/route.ts` | Issues R2 upload URLs for the form |
+| `src/app/submissions/` | Admin: briefs list, detail, invite, Build button |
+| `src/app/requests/` | Admin: change requests |
+| `src/app/dashboard/` | Client home |
+| `theme-src/kwd-theme/` | The WordPress theme source (zipped to `public/themes/kwd-theme.zip`) |
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Running it locally
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+git clone https://github.com/kentwebdesign-jpg/kwd-portal.git
+cd kwd-portal
+npm install
+cp .env.example .env      # then fill in the values (copy from Railway)
+npm run dev               # http://localhost:3000
+```
 
-## Deploy on Vercel
+Without `DATABASE_URL` the app won't start; without the other keys, individual
+features (auth, uploads, builds, AI copy) degrade or fall back. The full set of
+values lives in Railway → `kwd-portal` service → Variables.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+If you change the theme in `theme-src/kwd-theme/`, re-zip it:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+cd theme-src && zip -r ../public/themes/kwd-theme.zip kwd-theme
+```
+
+---
+
+## Environment variables
+
+Set in **Railway → `kwd-portal` service → Variables**. See `.env.example` for the
+full annotated list. None of the secret values are committed to git.
+
+`NEXT_PUBLIC_*` variables are baked in at **build** time, so they must be set in
+Railway *before* a deploy, not just at runtime.
+
+---
+
+## Status / roadmap
+
+- ✅ Per-client accounts, dashboard, onboarding form, file uploads
+- ✅ Admin: briefs + detail + invites, change requests
+- ✅ Build pipeline: provision + theme + AI-written pages
+- ⬜ Replace the placeholder `kwd-theme` with the real master theme
+- ⬜ Higgsfield image generation in the pipeline
+- ⬜ Custom domain `portal.kentwebdesign.com` + Clerk production instance
+
+---
+
+## Gotchas
+
+- InstaWP sites on the current plan **expire after ~48 hours** — fine for drafts; a
+  paid InstaWP plan is needed for sites that persist.
+- The Claude copy step **falls back to raw brief text** if `ANTHROPIC_API_KEY` is unset.
+- The portal lives inside the larger `kentwebdesign` working tree as its own git repo.
