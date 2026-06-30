@@ -17,6 +17,13 @@ export async function createSite(opts: { siteName?: string }): Promise<InstaWpSi
   const token = process.env.INSTAWP_API_TOKEN;
   if (!token) throw new Error("INSTAWP_API_TOKEN is not set.");
 
+  // InstaWP only allows a-z A-Z 0-9 and - in the site name.
+  const safeName = (opts.siteName ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40);
+
   const res = await fetch(`${INSTAWP_BASE}/sites`, {
     method: "POST",
     headers: {
@@ -25,7 +32,7 @@ export async function createSite(opts: { siteName?: string }): Promise<InstaWpSi
       Accept: "application/json",
     },
     body: JSON.stringify({
-      ...(opts.siteName ? { site_name: opts.siteName } : {}),
+      ...(safeName ? { site_name: safeName } : {}),
       is_reserved: true,
     }),
   });

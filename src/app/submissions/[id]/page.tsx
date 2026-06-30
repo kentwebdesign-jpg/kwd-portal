@@ -150,7 +150,7 @@ export default async function SubmissionDetail({
           </div>
         ) : submission.buildStatus === "error" ? (
           <p style={{ color: "#c0392b", fontSize: 14, margin: "0 0 12px" }}>
-            Build failed: {build.error ?? "unknown error"}. Check the template slug and try again.
+            Build failed: {build.error ?? "unknown error"}. Try again.
           </p>
         ) : null}
 
