@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getViewer } from "@/lib/auth";
 import { presignDownload } from "@/lib/r2";
+import { buildSite } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -107,6 +108,12 @@ export default async function SubmissionDetail({
   // Everything except the file refs goes in the answers list.
   const entries = Object.entries(data).filter(([key]) => key !== "__files");
 
+  const build = (submission.buildData ?? {}) as {
+    wp_username?: string;
+    wp_password?: string;
+    error?: string;
+  };
+
   return (
     <main style={{ maxWidth: 760, margin: "0 auto", padding: "40px 24px", fontFamily: "system-ui, sans-serif" }}>
       <a href="/submissions" style={{ color: "#0e7c7b", textDecoration: "none", fontSize: 14 }}>
@@ -117,6 +124,56 @@ export default async function SubmissionDetail({
         {submission.contactName ?? "—"} · {submission.contactEmail ?? "—"} · {submission.status} ·{" "}
         {submission.createdAt.toLocaleString("en-GB")}
       </p>
+
+      {/* Site build (InstaWP) */}
+      <section style={{ marginTop: 24, border: "1px solid #e8e8e8", borderRadius: 12, padding: 20 }}>
+        <h2 style={{ fontSize: 16, margin: "0 0 10px" }}>Site build</h2>
+
+        {submission.buildStatus === "ready" && submission.buildSiteUrl ? (
+          <div style={{ marginBottom: 14, fontSize: 14 }}>
+            <p style={{ color: "#137e6d", fontWeight: 600, margin: "0 0 8px" }}>
+              ✓ Site provisioned{submission.builtAt ? ` — ${submission.builtAt.toLocaleString("en-GB")}` : ""}
+            </p>
+            <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 8 }}>
+              <a href={submission.buildSiteUrl} target="_blank" rel="noopener noreferrer" style={{ color: "#0e7c7b", fontWeight: 600 }}>
+                Open site →
+              </a>
+              <a href={`${submission.buildSiteUrl.replace(/\/$/, "")}/wp-admin`} target="_blank" rel="noopener noreferrer" style={{ color: "#0e7c7b", fontWeight: 600 }}>
+                WP admin →
+              </a>
+            </div>
+            {(build.wp_username || build.wp_password) && (
+              <p style={{ color: "#666", margin: 0, fontFamily: "monospace", fontSize: 13 }}>
+                {build.wp_username} / {build.wp_password}
+              </p>
+            )}
+          </div>
+        ) : submission.buildStatus === "error" ? (
+          <p style={{ color: "#c0392b", fontSize: 14, margin: "0 0 12px" }}>
+            Build failed: {build.error ?? "unknown error"}. Check the template slug and try again.
+          </p>
+        ) : null}
+
+        <form action={buildSite} style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <input type="hidden" name="id" value={submission.id} />
+          <input
+            name="template_slug"
+            required
+            placeholder="InstaWP template slug"
+            style={{ flex: 1, minWidth: 200, padding: "9px 12px", borderRadius: 8, border: "1px solid #ddd", fontSize: 14 }}
+          />
+          <button
+            type="submit"
+            style={{ background: "#0e7c7b", color: "#fff", border: "none", borderRadius: 8, padding: "9px 18px", fontWeight: 600, cursor: "pointer" }}
+          >
+            {submission.buildStatus === "ready" ? "Rebuild" : "Build site"}
+          </button>
+        </form>
+        <p style={{ color: "#aaa", fontSize: 12, margin: "8px 0 0" }}>
+          Enter the InstaWP template slug to clone for this client. Image generation and content
+          population come next.
+        </p>
+      </section>
 
       {hasFiles && (
         <section style={{ marginTop: 24 }}>
