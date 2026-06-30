@@ -19,14 +19,14 @@ export async function buildSite(formData: FormData) {
   const submission = await prisma.submission.findUnique({ where: { id } });
   if (!submission) return;
 
-  // The InstaWP server fetches the theme zip from our public URL.
+  // The InstaWP server fetches the theme zips from our public URL.
   const h = await headers();
   const host = h.get("host");
   const proto = h.get("x-forwarded-proto") ?? "https";
-  const themeUrl = `${proto}://${host}/themes/kwd-theme.zip`;
+  const themeBaseUrl = `${proto}://${host}/themes`;
 
   try {
-    const result = await buildClientSite(submission.data as Record<string, unknown>, { themeUrl });
+    const result = await buildClientSite(submission.data as Record<string, unknown>, { themeBaseUrl });
     await prisma.submission.update({
       where: { id },
       data: {

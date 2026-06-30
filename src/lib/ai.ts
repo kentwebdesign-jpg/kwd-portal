@@ -1,109 +1,83 @@
 import Anthropic from "@anthropic-ai/sdk";
 
-// Turns a raw onboarding brief into professional, ready-to-use website copy
-// using Claude. Returns null if no API key is set or the call fails, so the
-// build pipeline can fall back to plain brief text.
+// Turns an onboarding brief into a complete, polished, self-contained one-page
+// website design (HTML + inline CSS) using Claude. Returns null if no API key
+// is set or the call fails, so the build can fall back to the basic theme.
 
-export type SiteContent = {
-  siteTitle: string;
-  tagline: string;
-  heroHeading: string;
-  heroSubtext: string;
-  homeIntro: string;
-  ctaLabel: string;
-  services: { name: string; description: string }[];
-  aboutParagraphs: string[];
-  contactIntro: string;
-  metaDescription: string;
-};
+const SYSTEM = `You are a world-class web designer and front-end developer creating a
+complete, finished marketing website for a small business, on behalf of Kent Web Design
+(a web design agency in Kent, UK).
 
-// Kent Web Design house voice (from the brand guidelines).
-const SYSTEM = `You are a senior web copywriter at Kent Web Design, a local web design
-agency serving small businesses across Kent, England.
+From the client's onboarding brief, produce ONE polished, modern, responsive single-page
+website as a self-contained HTML fragment.
 
-Write professional, ready-to-publish website copy from the client's onboarding brief.
+OUTPUT FORMAT (critical):
+- Output ONLY HTML. No markdown, no code fences, no commentary before or after.
+- Begin with a single <style>...</style> block containing ALL the CSS, then the page markup.
+- Do NOT include <!DOCTYPE>, <html>, <head>, or <body> tags. Your output is injected into the page body.
+- No JavaScript and no <script> tags. CSS only.
+- Do NOT use <img> tags pointing at photo URLs (there are no photo assets yet). Create visual
+  richness with CSS: gradients, colour, shapes, large type, generous spacing, and inline SVG for
+  icons. If a logo URL is in the brief you may use it; otherwise style the business name as a wordmark.
 
-Voice rules (follow exactly):
-- Plain English, short sentences, no jargon or buzzwords.
-- Lead with the outcome for the business owner, not features.
-- First person plural ("we") when speaking as the business.
-- No em dashes or en dashes. Use commas, full stops, or rewrite.
-- British spelling. Local and human in tone.
-- Never invent facts (prices, awards, client names, statistics). Only use what the brief gives you.
-- If a detail is missing, write naturally around it rather than guessing.
+DESIGN BAR:
+- It must look like a real, professionally designed agency website. Beautiful and finished, not a
+  template or a wireframe.
+- Modern layout: a sticky header with the business name, anchor navigation, and a primary
+  call-to-action; a striking hero; clearly separated sections; a strong footer.
+- Cohesive visual identity: choose a tasteful colour palette. Use the brief's brand colours if
+  provided; otherwise pick colours suited to the business type and the requested style. Pair good
+  Google Fonts (via @import in the <style>) - a characterful display face for headings and a clean
+  face for body text.
+- Responsive and mobile-first (flexbox/grid, media queries). Generous whitespace, a clear type
+  scale, strong visual hierarchy, accessible contrast, tasteful hover states and subtle transitions.
 
-Produce copy for a Home, About, Services and Contact page. Keep the hero punchy,
-the intro warm, service descriptions one or two sentences each, and the about
-section genuine. Return only the structured object.`;
+CONTENT:
+- Populate every section with real, specific copy from the brief: business name, what they do,
+  a services section (a card or grid item per service), their story/about, trust signals (reviews,
+  accreditations, guarantees, real numbers) only if genuinely provided, and a contact section.
+- Contact: use tel: and mailto: links and show the phone, email, address, opening hours and areas
+  covered that the brief provides. Do NOT build a form (there is no backend to receive it).
+- Voice: plain English, short sentences, lead with the outcome for the customer, first person "we",
+  British spelling, no jargon, no em dashes or en dashes. Never invent facts (prices, awards, client
+  names, statistics) - only use what the brief gives you.
 
-const SCHEMA = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    siteTitle: { type: "string" },
-    tagline: { type: "string" },
-    heroHeading: { type: "string" },
-    heroSubtext: { type: "string" },
-    homeIntro: { type: "string" },
-    ctaLabel: { type: "string" },
-    services: {
-      type: "array",
-      items: {
-        type: "object",
-        additionalProperties: false,
-        properties: {
-          name: { type: "string" },
-          description: { type: "string" },
-        },
-        required: ["name", "description"],
-      },
-    },
-    aboutParagraphs: { type: "array", items: { type: "string" } },
-    contactIntro: { type: "string" },
-    metaDescription: { type: "string" },
-  },
-  required: [
-    "siteTitle",
-    "tagline",
-    "heroHeading",
-    "heroSubtext",
-    "homeIntro",
-    "ctaLabel",
-    "services",
-    "aboutParagraphs",
-    "contactIntro",
-    "metaDescription",
-  ],
-} as const;
+Build the best site you can for this specific business.`;
 
-export async function generateSiteContent(brief: Record<string, unknown>): Promise<SiteContent | null> {
+export async function generateSiteDesign(brief: Record<string, unknown>): Promise<string | null> {
   if (!process.env.ANTHROPIC_API_KEY) return null;
 
   try {
     const client = new Anthropic();
-    const response = await client.messages.create({
+    const stream = client.messages.stream({
       model: "claude-opus-4-8",
-      max_tokens: 8000,
+      max_tokens: 16000,
+      output_config: { effort: "medium" }, // design quality vs build time
       system: SYSTEM,
-      output_config: {
-        effort: "low", // copywriting — keep the build fast; raise later if needed
-        format: { type: "json_schema", schema: SCHEMA },
-      },
       messages: [
         {
           role: "user",
           content:
-            "Here is the client's onboarding brief as JSON. Write the website copy.\n\n" +
+            "Design a complete one-page website for this business. Here is the onboarding brief as JSON:\n\n" +
             JSON.stringify(brief, null, 2),
         },
       ],
     });
 
-    const text = response.content.find((b) => b.type === "text");
-    if (!text || text.type !== "text") return null;
-    return JSON.parse(text.text) as SiteContent;
+    const message = await stream.finalMessage();
+    const text = message.content
+      .filter((b): b is Anthropic.TextBlock => b.type === "text")
+      .map((b) => b.text)
+      .join("");
+
+    // Strip any accidental markdown code fences.
+    let html = text.trim();
+    html = html.replace(/^```[a-zA-Z]*\n?/, "").replace(/\n?```$/, "").trim();
+
+    if (html.length < 200) return null; // implausibly short — treat as failure
+    return html;
   } catch (err) {
-    console.error("AI content generation failed, falling back to brief text:", err);
+    console.error("AI design generation failed, falling back to basic theme:", err);
     return null;
   }
 }

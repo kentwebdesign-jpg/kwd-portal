@@ -1,87 +1,75 @@
 import { createSite, runWpCli, lastLine } from "./instawp";
 import { wpClient } from "./wp";
-import { generateSiteContent, type SiteContent } from "./ai";
+import { generateSiteDesign } from "./ai";
 
-// Turns a submitted brief into a built-out WordPress site: provision via
-// InstaWP, install the KWD theme, and create real pages. Page copy is written
-// by Claude from the brief, falling back to plain brief text if AI is off.
+// Turns a submitted brief into a built-out WordPress site:
+//  - provision a site via InstaWP
+//  - if AI is on: Claude designs a complete one-page site → blank "canvas" theme
+//  - otherwise: fall back to the basic KWD theme with plain pages from the brief
 
 type Brief = Record<string, unknown>;
 
 const txt = (v: unknown) => (typeof v === "string" ? v.trim() : "");
 const esc = (v: unknown) =>
   String(v ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
-// Preserve line breaks in multi-line answers.
 const para = (v: unknown) =>
   esc(txt(v))
     .split(/\n{2,}/)
     .map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`)
     .join("");
 
-// Services from the brief's repeatable rows.
-function briefServices(data: Brief): { name: string; description: string }[] {
+// ---- Fallback (no AI): plain pages from the brief on the basic theme ----
+
+function briefServices(data: Brief): { a?: string; b?: string }[] {
   const s = data.__services;
-  if (!Array.isArray(s)) return [];
-  return (s as { a?: string; b?: string }[])
-    .filter((r) => r && (r.a || r.b))
-    .map((r) => ({ name: r.a ?? "", description: r.b ?? "" }));
+  return Array.isArray(s) ? (s as { a?: string; b?: string }[]).filter((r) => r && (r.a || r.b)) : [];
 }
 
-// AI-written services if present, otherwise the brief's own.
-function serviceList(data: Brief, ai: SiteContent | null) {
-  return ai?.services?.length ? ai.services : briefServices(data);
+function homeHtml(data: Brief) {
+  const name = esc(txt(data.business_name) || "Your business");
+  const tagline = esc(txt(data.tagline) || txt(data.what_you_do));
+  const svc = briefServices(data);
+  let html = `<section class="hero"><div class="container"><h1>${name}</h1>`;
+  if (tagline) html += `<p>${tagline}</p>`;
+  html += `<a class="btn" href="/contact/">Get in touch</a></div></section><div class="container">`;
+  if (txt(data.what_you_do)) html += `<h2>What we do</h2>${para(data.what_you_do)}`;
+  if (svc.length) {
+    html += `<h2>Our services</h2><div class="cards">`;
+    svc.forEach((r) => {
+      html += `<div class="card"><h3>${esc(r.a ?? "")}</h3>${r.b ? `<p>${esc(r.b)}</p>` : ""}</div>`;
+    });
+    html += `</div>`;
+  }
+  return html + `</div>`;
 }
 
-function serviceCards(list: { name: string; description: string }[]) {
-  return (
-    `<div class="cards">` +
-    list
-      .map(
-        (r) => `<div class="card"><h3>${esc(r.name)}</h3>${r.description ? `<p>${esc(r.description)}</p>` : ""}</div>`,
-      )
-      .join("") +
-    `</div>`
-  );
-}
-
-function homeHtml(data: Brief, ai: SiteContent | null) {
-  const heading = esc(ai?.heroHeading || txt(data.business_name) || "Your business");
-  const subtext = esc(ai?.heroSubtext || txt(data.tagline) || txt(data.what_you_do));
-  const cta = esc(ai?.ctaLabel || "Get in touch");
-  const intro = ai?.homeIntro ? `<p>${esc(ai.homeIntro)}</p>` : para(data.what_you_do);
-  const svc = serviceList(data, ai);
-
-  let html = `<section class="hero"><div class="container"><h1>${heading}</h1>`;
-  if (subtext) html += `<p>${subtext}</p>`;
-  html += `<a class="btn" href="/contact/">${cta}</a></div></section><div class="container">`;
-  if (intro) html += `<h2>What we do</h2>${intro}`;
-  if (svc.length) html += `<h2>Our services</h2>${serviceCards(svc)}`;
-  html += `</div>`;
-  return html;
-}
-
-function aboutHtml(data: Brief, ai: SiteContent | null) {
-  if (ai?.aboutParagraphs?.length) return ai.aboutParagraphs.map((p) => `<p>${esc(p)}</p>`).join("");
+function aboutHtml(data: Brief) {
   const story = txt(data.about_story);
   return story ? para(story) : `<p>About ${esc(txt(data.business_name) || "us")}.</p>`;
 }
 
-function servicesHtml(data: Brief, ai: SiteContent | null) {
-  const svc = serviceList(data, ai);
-  return svc.length ? serviceCards(svc) : `<p>Our services.</p>`;
+function servicesHtml(data: Brief) {
+  const svc = briefServices(data);
+  if (!svc.length) return `<p>Our services.</p>`;
+  return (
+    `<div class="cards">` +
+    svc.map((r) => `<div class="card"><h3>${esc(r.a ?? "")}</h3>${r.b ? `<p>${esc(r.b)}</p>` : ""}</div>`).join("") +
+    `</div>`
+  );
 }
 
-function contactHtml(data: Brief, ai: SiteContent | null) {
+function contactHtml(data: Brief) {
   const rows: string[] = [];
   if (txt(data.phone)) rows.push(`<li><strong>Phone:</strong> ${esc(txt(data.phone))}</li>`);
   if (txt(data.public_email)) rows.push(`<li><strong>Email:</strong> ${esc(txt(data.public_email))}</li>`);
   if (txt(data.address)) rows.push(`<li><strong>Address:</strong> ${esc(txt(data.address))}</li>`);
   if (txt(data.opening_hours)) rows.push(`<li><strong>Hours:</strong> ${esc(txt(data.opening_hours))}</li>`);
-  const intro = ai?.contactIntro ? `<p>${esc(ai.contactIntro)}</p>` : "";
-  let html = intro + (rows.length ? `<ul class="contact-list">${rows.join("")}</ul>` : `<p>Get in touch.</p>`);
+  let html = rows.length ? `<ul class="contact-list">${rows.join("")}</ul>` : `<p>Get in touch.</p>`;
   if (txt(data.areas_covered)) html += `<h2>Areas we cover</h2>${para(data.areas_covered)}`;
   return html;
 }
+
+// ---- Build ----
 
 export type BuildResult = {
   siteUrl: string;
@@ -89,9 +77,10 @@ export type BuildResult = {
   adminUser: string;
   adminPassword: string; // for wp-admin login
   appPassword: string; // for REST writes
+  designed: boolean; // true if AI-designed, false if fallback
 };
 
-export async function buildClientSite(data: Brief, opts: { themeUrl: string }): Promise<BuildResult> {
+export async function buildClientSite(data: Brief, opts: { themeBaseUrl: string }): Promise<BuildResult> {
   const site = await createSite();
   const siteId = site.id;
   const siteUrl = site.wp_url;
@@ -109,27 +98,31 @@ export async function buildClientSite(data: Brief, opts: { themeUrl: string }): 
     throw new Error("Could not obtain an application password from the new site.");
   }
 
-  // Install + activate the KWD theme.
-  await runWpCli(siteId, `wp theme install ${opts.themeUrl} --activate`);
+  // Claude designs the site (null if AI is off or it fails).
+  const design = await generateSiteDesign(data);
 
-  // Write professional copy with Claude (falls back to brief text if AI is off).
-  const ai = await generateSiteContent(data);
-
-  // Site identity + pages via REST.
   const wp = wpClient(siteUrl, adminUser, appPassword);
   await wp.updateSettings({
-    title: ai?.siteTitle || txt(data.business_name) || "New site",
-    description: ai?.tagline || txt(data.tagline),
+    title: txt(data.business_name) || "New site",
+    description: txt(data.tagline),
   });
 
-  const home = await wp.createPage({ title: "Home", slug: "home", content: homeHtml(data, ai) });
-  const about = await wp.createPage({ title: "About", slug: "about", content: aboutHtml(data, ai) });
-  const servicesPage = await wp.createPage({ title: "Services", slug: "services", content: servicesHtml(data, ai) });
-  const contact = await wp.createPage({ title: "Contact", slug: "contact", content: contactHtml(data, ai) });
+  if (design) {
+    // Bespoke AI design on the blank canvas theme — one self-contained page.
+    await runWpCli(siteId, `wp theme install ${opts.themeBaseUrl}/kwd-canvas.zip --activate`);
+    const home = await wp.createPage({ title: txt(data.business_name) || "Home", slug: "home", content: design });
+    await wp.updateSettings({ show_on_front: "page", page_on_front: home.id as number });
+    return { siteUrl, siteId, adminUser, adminPassword, appPassword, designed: true };
+  }
 
+  // Fallback: basic theme with plain pages from the brief.
+  await runWpCli(siteId, `wp theme install ${opts.themeBaseUrl}/kwd-theme.zip --activate`);
+  const home = await wp.createPage({ title: "Home", slug: "home", content: homeHtml(data) });
+  const about = await wp.createPage({ title: "About", slug: "about", content: aboutHtml(data) });
+  const servicesPage = await wp.createPage({ title: "Services", slug: "services", content: servicesHtml(data) });
+  const contact = await wp.createPage({ title: "Contact", slug: "contact", content: contactHtml(data) });
   await wp.updateSettings({ show_on_front: "page", page_on_front: home.id as number });
 
-  // Primary nav menu (best effort — site still works without it).
   try {
     await runWpCli(siteId, `wp menu create "Primary"`);
     await runWpCli(siteId, `wp menu location assign primary primary`);
@@ -137,8 +130,8 @@ export async function buildClientSite(data: Brief, opts: { themeUrl: string }): 
       await runWpCli(siteId, `wp menu item add-post primary ${id}`);
     }
   } catch {
-    // ignore menu failures
+    // menu is best-effort
   }
 
-  return { siteUrl, siteId, adminUser, adminPassword, appPassword };
+  return { siteUrl, siteId, adminUser, adminPassword, appPassword, designed: false };
 }

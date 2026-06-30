@@ -1,0 +1,11 @@
+/*
+Theme Name: KWD Canvas
+Theme URI: https://kentwebdesign.com
+Author: Kent Web Design
+Description: A blank canvas theme. The page content is a complete, self-contained design (its own CSS and markup), so this theme adds no chrome and minimal reset. Used for AI-designed client sites.
+Version: 0.1.0
+*/
+
+html, body { margin: 0; padding: 0; }
+* { box-sizing: border-box; }
+img { max-width: 100%; height: auto; }
