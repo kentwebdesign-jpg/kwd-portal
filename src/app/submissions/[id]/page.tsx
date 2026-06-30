@@ -160,13 +160,7 @@ export default async function SubmissionDetail({
               <div style={{ marginBottom: 14, fontSize: 14 }}>
                 <p style={{ color: "#137e6d", fontWeight: 600, margin: "0 0 8px" }}>
                   ✓ Site built{submission.builtAt ? ` — ${submission.builtAt.toLocaleString("en-GB")}` : ""}
-                  {build.designed === false ? " (basic theme)" : ""}
                 </p>
-                {build.designed === false && (
-                  <p style={{ color: "#b8860b", fontSize: 13, margin: "0 0 8px" }}>
-                    ⚠ AI design unavailable, used the basic theme. Reason: {build.ai_error ?? "unknown"}
-                  </p>
-                )}
                 <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 8 }}>
                   <a href={submission.buildSiteUrl} target="_blank" rel="noopener noreferrer" style={{ color: "#0e7c7b", fontWeight: 600 }}>
                     Open site →
@@ -182,9 +176,12 @@ export default async function SubmissionDetail({
                 )}
               </div>
             ) : submission.buildStatus === "error" ? (
-              <p style={{ color: "#c0392b", fontSize: 14, margin: "0 0 12px" }}>
-                Build failed: {build.error ?? "unknown error"}. Try again.
-              </p>
+              <div style={{ background: "#fdecea", border: "1px solid #f5c6c0", borderRadius: 8, padding: "12px 14px", margin: "0 0 14px" }}>
+                <p style={{ color: "#c0392b", fontWeight: 600, margin: "0 0 4px", fontSize: 14 }}>Build failed</p>
+                <p style={{ color: "#7a2c25", fontSize: 13, margin: 0, whiteSpace: "pre-wrap" }}>
+                  {build.error ?? "Unknown error."}
+                </p>
+              </div>
             ) : null}
 
             <form action={buildSite}>

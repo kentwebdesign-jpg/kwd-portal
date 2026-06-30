@@ -59,8 +59,6 @@ export async function buildSite(formData: FormData) {
             wp_password: result.adminPassword,
             app_password: result.appPassword,
             site_id: result.siteId,
-            designed: result.designed,
-            ai_error: result.aiError,
           } as Prisma.InputJsonValue,
           builtAt: new Date(),
         },
@@ -70,11 +68,10 @@ export async function buildSite(formData: FormData) {
       await sendAdminEmail({
         subject: `Site built: ${business}`,
         text:
-          `The website for ${business} has finished building.\n\n` +
+          `The AI-designed website for ${business} has finished building.\n\n` +
           `View site: ${result.siteUrl}\n` +
           `WordPress admin: ${adminUrl}\n` +
-          `Login: ${result.adminUser} / ${result.adminPassword}\n\n` +
-          `Style: ${result.designed ? "AI-designed" : "basic theme (AI fell back)"}`,
+          `Login: ${result.adminUser} / ${result.adminPassword}`,
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
