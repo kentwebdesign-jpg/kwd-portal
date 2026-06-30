@@ -1,3 +1,4 @@
+import { UserButton } from "@clerk/nextjs";
 import { prisma } from "@/lib/prisma";
 
 // Always read fresh from the database, never statically cache.
@@ -10,7 +11,10 @@ export default async function SubmissionsPage() {
 
   return (
     <main style={{ maxWidth: 880, margin: "0 auto", padding: "48px 24px", fontFamily: "system-ui, sans-serif" }}>
-      <h1 style={{ fontSize: 28, marginBottom: 4 }}>Onboarding briefs</h1>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <h1 style={{ fontSize: 28, marginBottom: 4 }}>Onboarding briefs</h1>
+        <UserButton />
+      </div>
       <p style={{ color: "#666", marginTop: 0 }}>
         {submissions.length} {submissions.length === 1 ? "brief" : "briefs"} received.
       </p>
@@ -33,7 +37,11 @@ export default async function SubmissionsPage() {
           <tbody>
             {submissions.map((s) => (
               <tr key={s.id} style={{ borderBottom: "1px solid #f0f0f0" }}>
-                <td style={{ padding: "10px 8px" }}>{s.businessName ?? "—"}</td>
+                <td style={{ padding: "10px 8px" }}>
+                  <a href={`/submissions/${s.id}`} style={{ color: "#0e7c7b", textDecoration: "none", fontWeight: 600 }}>
+                    {s.businessName ?? "Untitled brief"}
+                  </a>
+                </td>
                 <td style={{ padding: "10px 8px" }}>{s.contactName ?? "—"}</td>
                 <td style={{ padding: "10px 8px" }}>{s.contactEmail ?? "—"}</td>
                 <td style={{ padding: "10px 8px" }}>{s.status}</td>
