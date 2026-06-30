@@ -1,8 +1,10 @@
 import { createSite, runWpCli, lastLine } from "./instawp";
 import { wpClient } from "./wp";
+import { generateSiteContent, type SiteContent } from "./ai";
 
 // Turns a submitted brief into a built-out WordPress site: provision via
-// InstaWP, install the KWD theme, and create real pages from the brief.
+// InstaWP, install the KWD theme, and create real pages. Page copy is written
+// by Claude from the brief, falling back to plain brief text if AI is off.
 
 type Brief = Record<string, unknown>;
 
@@ -16,52 +18,67 @@ const para = (v: unknown) =>
     .map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`)
     .join("");
 
-function services(data: Brief): { a?: string; b?: string }[] {
+// Services from the brief's repeatable rows.
+function briefServices(data: Brief): { name: string; description: string }[] {
   const s = data.__services;
-  return Array.isArray(s) ? (s as { a?: string; b?: string }[]).filter((r) => r && (r.a || r.b)) : [];
+  if (!Array.isArray(s)) return [];
+  return (s as { a?: string; b?: string }[])
+    .filter((r) => r && (r.a || r.b))
+    .map((r) => ({ name: r.a ?? "", description: r.b ?? "" }));
 }
 
-function homeHtml(data: Brief) {
-  const name = esc(txt(data.business_name) || "Your business");
-  const tagline = esc(txt(data.tagline) || txt(data.what_you_do));
-  const svc = services(data);
-  let html = `<section class="hero"><div class="container"><h1>${name}</h1>`;
-  if (tagline) html += `<p>${tagline}</p>`;
-  html += `<a class="btn" href="/contact/">Get in touch</a></div></section><div class="container">`;
-  if (txt(data.what_you_do)) html += `<h2>What we do</h2>${para(data.what_you_do)}`;
-  if (svc.length) {
-    html += `<h2>Our services</h2><div class="cards">`;
-    svc.forEach((r) => {
-      html += `<div class="card"><h3>${esc(r.a ?? "")}</h3>${r.b ? `<p>${esc(r.b)}</p>` : ""}</div>`;
-    });
-    html += `</div>`;
-  }
+// AI-written services if present, otherwise the brief's own.
+function serviceList(data: Brief, ai: SiteContent | null) {
+  return ai?.services?.length ? ai.services : briefServices(data);
+}
+
+function serviceCards(list: { name: string; description: string }[]) {
+  return (
+    `<div class="cards">` +
+    list
+      .map(
+        (r) => `<div class="card"><h3>${esc(r.name)}</h3>${r.description ? `<p>${esc(r.description)}</p>` : ""}</div>`,
+      )
+      .join("") +
+    `</div>`
+  );
+}
+
+function homeHtml(data: Brief, ai: SiteContent | null) {
+  const heading = esc(ai?.heroHeading || txt(data.business_name) || "Your business");
+  const subtext = esc(ai?.heroSubtext || txt(data.tagline) || txt(data.what_you_do));
+  const cta = esc(ai?.ctaLabel || "Get in touch");
+  const intro = ai?.homeIntro ? `<p>${esc(ai.homeIntro)}</p>` : para(data.what_you_do);
+  const svc = serviceList(data, ai);
+
+  let html = `<section class="hero"><div class="container"><h1>${heading}</h1>`;
+  if (subtext) html += `<p>${subtext}</p>`;
+  html += `<a class="btn" href="/contact/">${cta}</a></div></section><div class="container">`;
+  if (intro) html += `<h2>What we do</h2>${intro}`;
+  if (svc.length) html += `<h2>Our services</h2>${serviceCards(svc)}`;
   html += `</div>`;
   return html;
 }
 
-function aboutHtml(data: Brief) {
+function aboutHtml(data: Brief, ai: SiteContent | null) {
+  if (ai?.aboutParagraphs?.length) return ai.aboutParagraphs.map((p) => `<p>${esc(p)}</p>`).join("");
   const story = txt(data.about_story);
   return story ? para(story) : `<p>About ${esc(txt(data.business_name) || "us")}.</p>`;
 }
 
-function servicesHtml(data: Brief) {
-  const svc = services(data);
-  if (!svc.length) return `<p>Our services.</p>`;
-  let html = `<div class="cards">`;
-  svc.forEach((r) => {
-    html += `<div class="card"><h3>${esc(r.a ?? "")}</h3>${r.b ? `<p>${esc(r.b)}</p>` : ""}</div>`;
-  });
-  return html + `</div>`;
+function servicesHtml(data: Brief, ai: SiteContent | null) {
+  const svc = serviceList(data, ai);
+  return svc.length ? serviceCards(svc) : `<p>Our services.</p>`;
 }
 
-function contactHtml(data: Brief) {
+function contactHtml(data: Brief, ai: SiteContent | null) {
   const rows: string[] = [];
   if (txt(data.phone)) rows.push(`<li><strong>Phone:</strong> ${esc(txt(data.phone))}</li>`);
   if (txt(data.public_email)) rows.push(`<li><strong>Email:</strong> ${esc(txt(data.public_email))}</li>`);
   if (txt(data.address)) rows.push(`<li><strong>Address:</strong> ${esc(txt(data.address))}</li>`);
   if (txt(data.opening_hours)) rows.push(`<li><strong>Hours:</strong> ${esc(txt(data.opening_hours))}</li>`);
-  let html = rows.length ? `<ul class="contact-list">${rows.join("")}</ul>` : `<p>Get in touch.</p>`;
+  const intro = ai?.contactIntro ? `<p>${esc(ai.contactIntro)}</p>` : "";
+  let html = intro + (rows.length ? `<ul class="contact-list">${rows.join("")}</ul>` : `<p>Get in touch.</p>`);
   if (txt(data.areas_covered)) html += `<h2>Areas we cover</h2>${para(data.areas_covered)}`;
   return html;
 }
@@ -95,17 +112,20 @@ export async function buildClientSite(data: Brief, opts: { themeUrl: string }): 
   // Install + activate the KWD theme.
   await runWpCli(siteId, `wp theme install ${opts.themeUrl} --activate`);
 
+  // Write professional copy with Claude (falls back to brief text if AI is off).
+  const ai = await generateSiteContent(data);
+
   // Site identity + pages via REST.
   const wp = wpClient(siteUrl, adminUser, appPassword);
   await wp.updateSettings({
-    title: txt(data.business_name) || "New site",
-    description: txt(data.tagline),
+    title: ai?.siteTitle || txt(data.business_name) || "New site",
+    description: ai?.tagline || txt(data.tagline),
   });
 
-  const home = await wp.createPage({ title: "Home", slug: "home", content: homeHtml(data) });
-  const about = await wp.createPage({ title: "About", slug: "about", content: aboutHtml(data) });
-  const servicesPage = await wp.createPage({ title: "Services", slug: "services", content: servicesHtml(data) });
-  const contact = await wp.createPage({ title: "Contact", slug: "contact", content: contactHtml(data) });
+  const home = await wp.createPage({ title: "Home", slug: "home", content: homeHtml(data, ai) });
+  const about = await wp.createPage({ title: "About", slug: "about", content: aboutHtml(data, ai) });
+  const servicesPage = await wp.createPage({ title: "Services", slug: "services", content: servicesHtml(data, ai) });
+  const contact = await wp.createPage({ title: "Contact", slug: "contact", content: contactHtml(data, ai) });
 
   await wp.updateSettings({ show_on_front: "page", page_on_front: home.id as number });
 
