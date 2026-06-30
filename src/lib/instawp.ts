@@ -17,12 +17,15 @@ export async function createSite(opts: { siteName?: string }): Promise<InstaWpSi
   const token = process.env.INSTAWP_API_TOKEN;
   if (!token) throw new Error("INSTAWP_API_TOKEN is not set.");
 
-  // InstaWP only allows a-z A-Z 0-9 and - in the site name.
-  const safeName = (opts.siteName ?? "")
+  // InstaWP only allows a-z A-Z 0-9 and - in the site name, and subdomains must
+  // be globally unique — so append a short random suffix.
+  const base = (opts.siteName ?? "")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
-    .slice(0, 40);
+    .slice(0, 32);
+  const suffix = Math.random().toString(36).slice(2, 6);
+  const safeName = base ? `${base}-${suffix}` : "";
 
   const res = await fetch(`${INSTAWP_BASE}/sites`, {
     method: "POST",
