@@ -50,7 +50,9 @@ export async function generateSiteDesign(brief: Record<string, unknown>): Promis
   if (!process.env.ANTHROPIC_API_KEY) return { error: "ANTHROPIC_API_KEY is not set" };
 
   try {
-    const client = new Anthropic();
+    // Cap the request so a slow/stalled call fails fast to the fallback
+    // instead of hanging the whole build.
+    const client = new Anthropic({ timeout: 4 * 60 * 1000, maxRetries: 1 });
     const stream = client.messages.stream({
       model: "claude-opus-4-8",
       max_tokens: 16000,
