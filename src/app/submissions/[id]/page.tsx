@@ -1,5 +1,6 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { getViewer } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -80,6 +81,9 @@ export default async function SubmissionDetail({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const { isAdmin } = await getViewer();
+  if (!isAdmin) redirect("/dashboard");
+
   const { id } = await params;
   const submission = await prisma.submission.findUnique({ where: { id } });
   if (!submission) notFound();

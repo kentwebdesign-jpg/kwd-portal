@@ -1,10 +1,16 @@
+import { redirect } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
 import { prisma } from "@/lib/prisma";
+import { getViewer } from "@/lib/auth";
+import { inviteClient } from "./actions";
 
 // Always read fresh from the database, never statically cache.
 export const dynamic = "force-dynamic";
 
 export default async function SubmissionsPage() {
+  const { isAdmin } = await getViewer();
+  if (!isAdmin) redirect("/dashboard");
+
   const submissions = await prisma.submission.findMany({
     orderBy: { createdAt: "desc" },
   });
@@ -18,6 +24,26 @@ export default async function SubmissionsPage() {
       <p style={{ color: "#666", marginTop: 0 }}>
         {submissions.length} {submissions.length === 1 ? "brief" : "briefs"} received.
       </p>
+
+      {/* Invite a client */}
+      <form
+        action={inviteClient}
+        style={{ display: "flex", gap: 8, marginTop: 20, padding: 16, background: "#f7f7f7", borderRadius: 10 }}
+      >
+        <input
+          type="email"
+          name="email"
+          required
+          placeholder="client@theirbusiness.co.uk"
+          style={{ flex: 1, padding: "10px 12px", borderRadius: 8, border: "1px solid #ddd", fontSize: 14 }}
+        />
+        <button
+          type="submit"
+          style={{ background: "#0e7c7b", color: "#fff", border: "none", borderRadius: 8, padding: "10px 18px", fontWeight: 600, cursor: "pointer" }}
+        >
+          Invite client
+        </button>
+      </form>
 
       {submissions.length === 0 ? (
         <p style={{ marginTop: 32, color: "#888" }}>
