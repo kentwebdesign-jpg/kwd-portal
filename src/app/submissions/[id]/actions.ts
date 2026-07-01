@@ -67,6 +67,7 @@ export async function buildSite(formData: FormData) {
             site_id: result.siteId,
             pages: result.pages,
             images: result.images,
+            design: result.design,
           } as Prisma.InputJsonValue,
           builtAt: new Date(),
         },
@@ -74,13 +75,20 @@ export async function buildSite(formData: FormData) {
 
       const adminUrl = `${result.siteUrl.replace(/\/$/, "")}/wp-admin`;
       const pageList = result.pages.map((p) => `  • ${p.title} — ${p.url}`).join("\n");
+      const d = result.design;
+      const designLine = d.reviewed
+        ? `Design review: ${d.finalScore}/10 after ${d.passes} pass${d.passes === 1 ? "" : "es"}` +
+          (d.initialScore != null && d.initialScore !== d.finalScore ? ` (up from ${d.initialScore})` : "") +
+          (d.summary ? ` — ${d.summary}` : "")
+        : `Design review: ${d.verdict}`;
       await sendAdminEmail({
         subject: `Site built: ${business}`,
         text:
           `The AI-designed website for ${business} has finished building — ${result.pages.length} pages.\n\n` +
           `View site: ${result.siteUrl}\n` +
           `WordPress admin: ${adminUrl}\n` +
-          `Login: ${result.adminUser} / ${result.adminPassword}\n\n` +
+          `Login: ${result.adminUser} / ${result.adminPassword}\n` +
+          `${designLine}\n\n` +
           `Pages:\n${pageList}`,
       });
     } catch (err) {

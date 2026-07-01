@@ -36,10 +36,14 @@ Sets password, logs in
 Dashboard (/dashboard)                  See all briefs (/submissions)
   → completes onboarding form (/brief)  Open a brief → see every answer + files
     (saved to Postgres, files to R2)    Click "Build site":
-Later: raise change requests              1. InstaWP provisions a WordPress site
-                                          2. Installs the KWD theme
-                                          3. Claude writes the page copy from the brief
-                                          4. Creates Home/About/Services/Contact pages
+Later: raise change requests              1. Higgsfield generates bespoke imagery
+                                          2. Claude plans the site + writes every page
+                                          3. DESIGN REVIEW: the home page is rendered
+                                             to real screenshots (headless Chrome),
+                                             critiqued against the agency wow bar,
+                                             refined, and re-checked (max 2 passes)
+                                          4. InstaWP provisions WordPress + KWD theme
+                                          5. Pages created; review score in buildData
                                         Manage change requests (/requests)
 ```
 
@@ -62,7 +66,9 @@ Later: raise change requests              1. InstaWP provisions a WordPress site
 | `src/lib/r2.ts` | Cloudflare R2 (presigned upload/download) |
 | `src/lib/instawp.ts` | InstaWP API: create site + run WP-CLI commands |
 | `src/lib/wp.ts` | WordPress REST client (create pages, set options) |
-| `src/lib/ai.ts` | Claude call that writes the site copy from the brief |
+| `src/lib/ai.ts` | Claude pipeline: plan → write pages → design-review loop |
+| `src/lib/render.ts` | Headless-Chrome screenshots of the generated home page |
+| `src/lib/critique.ts` | Vision critique vs the wow bar + refine prompts |
 | `src/lib/sitebuilder.ts` | Orchestrates the whole build pipeline |
 | `src/app/api/submit/route.ts` | Receives a completed brief, saves it |
 | `src/app/api/upload-url/route.ts` | Issues R2 upload URLs for the form |
@@ -110,6 +116,7 @@ Railway *before* a deploy, not just at runtime.
 - ✅ Per-client accounts, dashboard, onboarding form, file uploads
 - ✅ Admin: briefs + detail + invites, change requests
 - ✅ Build pipeline: provision + theme + AI-written pages
+- ✅ Design-review loop: render → critique → refine before publishing
 - ⬜ Replace the placeholder `kwd-theme` with the real master theme
 - ⬜ Higgsfield image generation in the pipeline
 - ⬜ Custom domain `portal.kentwebdesign.com` + Clerk production instance
@@ -121,4 +128,10 @@ Railway *before* a deploy, not just at runtime.
 - InstaWP sites on the current plan **expire after ~48 hours** — fine for drafts; a
   paid InstaWP plan is needed for sites that persist.
 - The Claude copy step **falls back to raw brief text** if `ANTHROPIC_API_KEY` is unset.
+- The design-review loop needs headless Chrome. It tries, in order:
+  `PUPPETEER_EXECUTABLE_PATH` (env override) → `@sparticuz/chromium` (bundled
+  static build, used on Railway) → a locally installed Chrome (dev Macs). If none
+  launch, the build **continues without the review** and `buildData.design.verdict`
+  records `skipped: renderer unavailable` — check that field on the first Railway
+  build after deploying.
 - The portal lives inside the larger `kentwebdesign` working tree as its own git repo.

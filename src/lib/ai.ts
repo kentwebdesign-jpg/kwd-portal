@@ -3,6 +3,15 @@ import { MASTER_BUILD_PROMPT } from "./master-build-prompt";
 import { DESIGN_REFERENCES } from "./design-references";
 import { DESIGN_INTELLIGENCE } from "./design-intelligence";
 import { BUTTON_BUILD_SPEC } from "./button-build-spec";
+import { renderPageShots } from "./render";
+import {
+  critiqueSystem,
+  critiqueUserContent,
+  parseCritique,
+  reviseSystem,
+  reviseUser,
+  type Critique,
+} from "./critique";
 
 // Turns an onboarding brief into a complete, multi-page website using Claude,
 // driven by the agency's house rules (MASTER-BUILD-PROMPT.md) plus the client's
@@ -10,6 +19,13 @@ import { BUTTON_BUILD_SPEC } from "./button-build-spec";
 // output is a set of self-contained HTML fragments that share a byte-identical
 // header, footer and CSS. Returns { error } if no API key is set or a call
 // fails, so the build can stop cleanly rather than half-provision a site.
+//
+// Pipeline (the third phase is what separates this from a one-shot generator):
+//   1. PLAN     — sitemap + shared design system (CSS, header, footer)
+//   2. WRITE    — each page's body, in parallel
+//   3. REVIEW   — render the home page to real screenshots, have a design-
+//                 director pass critique them against the wow bar, refine the
+//                 design, and re-check. The generator finally SEES its output.
 
 const MODEL = "claude-opus-4-8";
 
@@ -91,7 +107,12 @@ sections, parallax, clip-path image reveals, counters). Keep it lean, lazy-init,
 respect prefers-reduced-motion, and never drop below the Lighthouse-90 budget.
 Full 3D/WebGL is out of scope for this auto-build (no asset pipeline) — get the
 "wow" from bold type, depth, layered CSS and choreographed GSAP motion instead.
-No preloaders, ever.`;
+No preloaders, ever.
+
+MOTION SAFETY (hard requirement): content must NEVER be invisible without JS or
+before a scroll trigger fires. Anything animated in must start visible-enough
+(no permanent opacity:0 in CSS; set initial states from JS only), so a
+screenshot or no-JS visit still shows a complete page.`;
 }
 
 // ── Phase 1: plan the site + design system ────────────────────────────────
@@ -198,8 +219,18 @@ export type SitePage = {
   html: string; // full page content: <style> + header + <main> + footer + <script>
 };
 
+// Diagnostics from the design-review loop, surfaced in the portal's build log.
+export type DesignReview = {
+  reviewed: boolean; // false when no renderer was available
+  passes: number; // how many render→critique rounds ran
+  initialScore: number | null;
+  finalScore: number | null;
+  verdict: string; // "ship" | "revise" | "skipped: <reason>"
+  summary: string; // the reviewer's final one-liner
+};
+
 export type SiteResult =
-  | { pages: SitePage[]; siteTitle: string; tagline: string; error?: undefined }
+  | { pages: SitePage[]; siteTitle: string; tagline: string; design: DesignReview; error?: undefined }
   | { error: string; pages?: undefined };
 
 type SharedDesign = { css: string; header: string; footer: string; js: string };
@@ -227,6 +258,10 @@ type Plan = {
 
 const MAX_PAGES = 16;
 const PAGE_CONCURRENCY = 4;
+// Design-review budget: at most this many critique rounds (each may trigger one
+// refine). Two rounds catches "flat/broken" and verifies the fix landed.
+const MAX_REVIEW_ROUNDS = 2;
+const SHIP_SCORE = 8;
 
 function newClient() {
   // Cap each request so a slow/stalled call fails to the caller rather than
@@ -237,7 +272,7 @@ function newClient() {
 async function runText(
   client: Anthropic,
   system: string,
-  user: string,
+  user: string | Anthropic.MessageParam["content"],
   maxTokens: number,
   effort: "low" | "medium" | "high",
 ): Promise<string> {
@@ -301,15 +336,143 @@ async function mapPool<T, R>(items: T[], limit: number, fn: (item: T, i: number)
   return results;
 }
 
+// ── Phase 3: the design-review loop ─────────────────────────────────────────
+// Render the home page, critique the screenshots against the wow bar, refine
+// the shared design + home body, verify the fix with a second render. Returns
+// the (possibly improved) design and what happened, and never throws — any
+// infrastructure failure just means "reviewed as far as we got".
+async function designReviewLoop(
+  client: Anthropic,
+  shared: SharedDesign,
+  homeBody: string,
+  context: { businessName: string; designRationale: string },
+  onStage: (s: string) => Promise<void>,
+): Promise<{ shared: SharedDesign; homeBody: string; review: DesignReview }> {
+  const review: DesignReview = {
+    reviewed: false,
+    passes: 0,
+    initialScore: null,
+    finalScore: null,
+    verdict: "skipped: renderer unavailable",
+    summary: "",
+  };
+
+  let current = { shared, homeBody };
+  // Keep the best-scoring version so a refine can never make the site worse.
+  let best: { shared: SharedDesign; homeBody: string; score: number } | null = null;
+
+  for (let round = 1; round <= MAX_REVIEW_ROUNDS; round++) {
+    await onStage(`Reviewing the design (pass ${round})`);
+    const shots = await renderPageShots(
+      assemblePage(current.shared, current.homeBody),
+      context.businessName,
+    );
+    if (!shots) {
+      // No Chrome available (or render blew up) — stop reviewing, keep the
+      // best version we have. First round: nothing was ever reviewed.
+      if (review.passes === 0) review.verdict = "skipped: renderer unavailable";
+      break;
+    }
+
+    let critique: Critique | null = null;
+    try {
+      const raw = await runText(client, critiqueSystem(), critiqueUserContent(shots, context), 3000, "medium");
+      critique = parseCritique(raw);
+    } catch (err) {
+      console.error(`Design critique (pass ${round}) failed:`, err);
+    }
+    if (!critique) {
+      if (review.passes === 0) review.verdict = "skipped: critique failed";
+      break;
+    }
+
+    review.reviewed = true;
+    review.passes = round;
+    review.summary = critique.summary;
+    if (review.initialScore == null) review.initialScore = critique.score;
+    review.finalScore = critique.score;
+    review.verdict = critique.verdict;
+
+    if (best == null || critique.score >= best.score) {
+      best = { ...current, score: critique.score };
+    } else {
+      // The refine regressed the score — roll back to the earlier version.
+      current = { shared: best.shared, homeBody: best.homeBody };
+      review.finalScore = best.score;
+      break;
+    }
+
+    const hasCritical = critique.problems.some((p) => p.severity === "critical");
+    if (critique.verdict === "ship" && critique.score >= SHIP_SCORE && !hasCritical) break;
+    if (round === MAX_REVIEW_ROUNDS) break; // out of budget — ship the best we have
+
+    // Refine: apply the reviewer's fixes to the shared design + home body.
+    await onStage(`Refining the design (pass ${round})`);
+    try {
+      const raw = await runText(
+        client,
+        reviseSystem(),
+        reviseUser(critique, {
+          css: current.shared.css,
+          header: current.shared.header,
+          footer: current.shared.footer,
+          homeBody: current.homeBody,
+        }),
+        32000,
+        "high",
+      );
+      const patch = JSON.parse(extractJson(raw)) as Partial<{
+        shared_css: string;
+        header_html: string;
+        footer_html: string;
+        home_body: string;
+      }>;
+      const revised: SharedDesign = {
+        css: typeof patch.shared_css === "string" && patch.shared_css.trim() ? patch.shared_css : current.shared.css,
+        header:
+          typeof patch.header_html === "string" && patch.header_html.trim() ? patch.header_html : current.shared.header,
+        footer:
+          typeof patch.footer_html === "string" && patch.footer_html.trim() ? patch.footer_html : current.shared.footer,
+        js: current.shared.js,
+      };
+      const revisedBody =
+        typeof patch.home_body === "string" && patch.home_body.trim() ? patch.home_body : current.homeBody;
+      const changed =
+        revised.css !== current.shared.css ||
+        revised.header !== current.shared.header ||
+        revised.footer !== current.shared.footer ||
+        revisedBody !== current.homeBody;
+      if (!changed) break; // reviewer's fixes produced no diff — nothing more to verify
+      current = { shared: revised, homeBody: revisedBody };
+    } catch (err) {
+      console.error(`Design refine (pass ${round}) failed:`, err);
+      break; // keep the best reviewed version
+    }
+  }
+
+  if (best && best.score >= (review.finalScore ?? 0)) {
+    current = { shared: best.shared, homeBody: best.homeBody };
+  }
+  return { shared: current.shared, homeBody: current.homeBody, review };
+}
+
 export async function generateSite(
   brief: Record<string, unknown>,
-  opts: { images?: SiteImage[] | null } = {},
+  opts: { images?: SiteImage[] | null; onStage?: (stage: string) => void | Promise<void> } = {},
 ): Promise<SiteResult> {
   if (!process.env.ANTHROPIC_API_KEY) return { error: "ANTHROPIC_API_KEY is not set" };
 
   const images = opts.images ?? null;
+  const stage = async (s: string) => {
+    try {
+      await opts.onStage?.(s);
+    } catch {
+      // progress reporting is best-effort
+    }
+  };
   const briefJson = JSON.stringify(brief, null, 2);
   const client = newClient();
+  const txt = (v: unknown) => (typeof v === "string" ? v.trim() : "");
 
   // ── Phase 1: plan + shared design system ──
   let plan: Plan;
@@ -339,7 +502,7 @@ export async function generateSite(
     return { error: "AI plan was incomplete (missing design system or pages)." };
   }
 
-  const shared: SharedDesign = {
+  let shared: SharedDesign = {
     css: plan.shared_css,
     header: plan.header_html,
     footer: plan.footer_html,
@@ -361,8 +524,9 @@ export async function generateSite(
   if (!homeAssigned && normPages[0]) normPages[0].is_home = true;
 
   // ── Phase 2: write each page's body (bounded concurrency) ──
+  await stage(`Writing page content (${normPages.length} pages)`);
   const pageSys = pageSystem(shared, images);
-  const pages = await mapPool(normPages, PAGE_CONCURRENCY, async (p) => {
+  const bodies = await mapPool(normPages, PAGE_CONCURRENCY, async (p) => {
     const user =
       `Write the <main> body for this page.\n\n` +
       `PAGE:\n${JSON.stringify(
@@ -383,21 +547,38 @@ export async function generateSite(
       // Last-resort fallback so the page still exists and the nav stays intact.
       body = `<section class="section"><div class="container"><h1>${p.h1 || p.title}</h1><p>${p.meta_description || ""}</p></div></section>`;
     }
-
-    const page: SitePage = {
-      slug: p.slug,
-      title: p.title || plan.site_title,
-      navLabel: p.nav_label || p.title || p.slug,
-      isHome: p.is_home,
-      metaDescription: p.meta_description || plan.tagline || "",
-      html: assemblePage(shared, body),
-    };
-    return page;
+    return body;
   });
+
+  // ── Phase 3: render → critique → refine (the loop that gives the build eyes) ──
+  const homeIdx = Math.max(0, normPages.findIndex((p) => p.is_home));
+  const reviewed = await designReviewLoop(
+    client,
+    shared,
+    bodies[homeIdx],
+    {
+      businessName: plan.site_title || txt(brief.business_name) || "the business",
+      designRationale: plan.design_rationale ?? "",
+    },
+    stage,
+  );
+  shared = reviewed.shared;
+  bodies[homeIdx] = reviewed.homeBody;
+
+  // ── Assemble every page with the final (reviewed) shared design ──
+  const pages: SitePage[] = normPages.map((p, i) => ({
+    slug: p.slug,
+    title: p.title || plan.site_title,
+    navLabel: p.nav_label || p.title || p.slug,
+    isHome: p.is_home,
+    metaDescription: p.meta_description || plan.tagline || "",
+    html: assemblePage(shared, bodies[i]),
+  }));
 
   return {
     pages,
     siteTitle: plan.site_title || "New site",
     tagline: plan.tagline || "",
+    design: reviewed.review,
   };
 }

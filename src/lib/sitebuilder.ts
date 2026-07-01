@@ -1,6 +1,6 @@
 import { createSite, deleteSite, runWpCli, lastLine } from "./instawp";
 import { wpClient } from "./wp";
-import { generateSite } from "./ai";
+import { generateSite, type DesignReview } from "./ai";
 import { generateSiteImages } from "./higgsfield";
 
 // Turns a submitted brief into a built-out, MULTI-PAGE WordPress site. The AI
@@ -32,6 +32,8 @@ export type BuildResult = {
   // Diagnostics: how many images were generated and re-hosted on the site,
   // plus the reason if generation failed.
   images: { generated: number; hostedOnSite: number; error: string | null };
+  // Diagnostics from the render→critique→refine design review.
+  design: DesignReview;
 };
 
 export async function buildClientSite(
@@ -53,10 +55,12 @@ export async function buildClientSite(
   const imageSet = await generateSiteImages(data);
   const images = imageSet.images;
 
-  // 2. Design the whole multi-page site, handing it the image library. If this
-  //    fails, stop here — nothing has been provisioned yet.
+  // 2. Design the whole multi-page site, handing it the image library. This now
+  //    includes the render→critique→refine design review (the pipeline renders
+  //    its own output to screenshots and fixes what it sees). If it fails, stop
+  //    here — nothing has been provisioned yet.
   await stage("Designing the site with AI (house rules + brief)");
-  const site = await generateSite(data, { images });
+  const site = await generateSite(data, { images, onStage: opts.onStage });
   if (!site.pages || site.pages.length === 0) {
     throw new Error(site.error ? `AI design failed: ${site.error}` : "AI design failed (no pages returned)");
   }
@@ -154,6 +158,7 @@ export async function buildClientSite(
       appPassword,
       pages: built,
       images: { generated: images.length, hostedOnSite: urlMap.length, error: imageSet.error },
+      design: site.design,
     };
   } catch (err) {
     await deleteSite(siteId);
