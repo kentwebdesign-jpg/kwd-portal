@@ -28,8 +28,9 @@ export type BuildResult = {
   adminPassword: string; // for wp-admin login
   appPassword: string; // for REST writes
   pages: BuiltPage[]; // every WordPress page we created
-  // Diagnostics: whether a hero image was generated and re-hosted on the site.
-  heroImage: { generated: boolean; hostedOnSite: boolean };
+  // Diagnostics: whether a hero image was generated and re-hosted on the site,
+  // plus the reason if generation failed.
+  heroImage: { generated: boolean; hostedOnSite: boolean; error: string | null };
 };
 
 export async function buildClientSite(
@@ -48,7 +49,8 @@ export async function buildClientSite(
   //    isn't configured or the call fails, heroImageUrl stays null and the site
   //    is designed image-free.
   await stage("Generating imagery");
-  const heroImageUrl = await generateHeroImage(data);
+  const hero = await generateHeroImage(data);
+  const heroImageUrl = hero.url;
 
   // 2. Design the whole multi-page site. If this fails, stop here — nothing has
   //    been provisioned yet.
@@ -148,7 +150,7 @@ export async function buildClientSite(
       adminPassword,
       appPassword,
       pages: built,
-      heroImage: { generated: !!heroImageUrl, hostedOnSite: !!localImageUrl },
+      heroImage: { generated: !!heroImageUrl, hostedOnSite: !!localImageUrl, error: hero.error },
     };
   } catch (err) {
     await deleteSite(siteId);
