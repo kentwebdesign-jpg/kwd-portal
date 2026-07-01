@@ -11,22 +11,29 @@ import { DESIGN_REFERENCES } from "./design-references";
 
 const MODEL = "claude-opus-4-8";
 
-// The IMAGES rule depends on whether we generated a hero image for this build.
-// With one, the AI is told to use that exact (hosted) URL as the home hero and
-// invent no other photo URLs; without one, it stays image-free and leans on CSS.
-function imagesSection(heroImageUrl?: string | null): string {
-  if (heroImageUrl) {
-    return `IMAGES: a professional hero image has been generated specifically for THIS
-business and is hosted for the site at this exact URL:
-${heroImageUrl}
-Use it as the main visual of the HOME page hero — a full-bleed CSS
-background-image (with a gradient/overlay so any text on top stays readable) or
-a prominent <img> with descriptive alt text. Use that URL verbatim; do not alter
-it. Do NOT invent, guess or link ANY other photo URLs anywhere on the site. For
-every other section and page, build visual richness with CSS (gradients, colour,
-shapes, large type, generous spacing) and inline SVG for icons. If the brief
-contains a logo URL you may use it and give it a proper moment; otherwise render
-the business name as a styled wordmark.`;
+export type SiteImage = { url: string; label: string };
+
+// The IMAGES rule depends on whether we generated images for this build. With a
+// set, the AI is told to use those exact (hosted) URLs across the whole site and
+// invent no other photo URLs; without any, it stays image-free and leans on CSS.
+function imagesSection(images?: SiteImage[] | null): string {
+  if (images && images.length) {
+    const list = images.map((img) => `- [${img.label}] ${img.url}`).join("\n");
+    return `IMAGES: a set of professional images has been generated specifically for THIS
+business and is hosted for the site. Use them THROUGHOUT the site, not just the
+home hero — the home hero, service/feature cards, the about section, section
+backgrounds, and relevant page headers. Reuse images across pages where it fits.
+Each is labelled with what it depicts; place them where that subject is relevant
+(the "hero" image suits the main hero/section backgrounds). Available images
+(use these exact URLs verbatim, do not alter them):
+${list}
+Use them as full-bleed CSS background-image (with a gradient/overlay so text
+stays readable) or as <img> with descriptive alt text and object-fit: cover. Do
+NOT invent, guess or link ANY other photo URLs. Between images, keep building
+visual richness with CSS (gradients, colour, shapes, large type, generous
+spacing) and inline SVG for icons. If the brief contains a logo URL you may use
+it and give it a proper moment; otherwise render the business name as a styled
+wordmark.`;
   }
   return `IMAGES: do not use <img> tags pointing at photo URLs — there are no photo assets
 yet. Build visual richness with CSS (gradients, colour, shapes, large type,
@@ -37,7 +44,7 @@ styled wordmark.`;
 
 // How the house rules map onto THIS delivery mechanism (individual WP pages).
 // The master prompt is the quality bar; this is the output contract.
-function deliveryContract(heroImageUrl?: string | null): string {
+function deliveryContract(images?: SiteImage[] | null): string {
   return `
 
 ────────────────────────────────────────────────────────
@@ -63,7 +70,7 @@ is exactly "/". Every other page links as "/<slug>/" (leading and trailing
 slash, e.g. "/boiler-repair/"). The nav in the header must link to every page
 in the sitemap and the hrefs MUST match the page slugs exactly.
 
-${imagesSection(heroImageUrl)}
+${imagesSection(images)}
 
 SEO: WordPress supplies each page's <title> (from the WP page title) and the
 theme emits the meta description we set, plus /wp-sitemap.xml and robots.txt.
@@ -86,10 +93,10 @@ No preloaders, ever.`;
 }
 
 // ── Phase 1: plan the site + design system ────────────────────────────────
-function planSystem(heroImageUrl?: string | null): string {
+function planSystem(images?: SiteImage[] | null): string {
   return `${MASTER_BUILD_PROMPT}
 ${DESIGN_REFERENCES}
-${deliveryContract(heroImageUrl)}
+${deliveryContract(images)}
 
 ────────────────────────────────────────────────────────
 YOUR TASK NOW — PHASE 1 of 2: PLAN THE SITE + DESIGN SYSTEM
@@ -140,10 +147,10 @@ no code fences, no commentary. Shape:
 }
 
 // ── Phase 2: write one page's body ─────────────────────────────────────────
-function pageSystem(shared: SharedDesign, heroImageUrl?: string | null): string {
+function pageSystem(shared: SharedDesign, images?: SiteImage[] | null): string {
   return `${MASTER_BUILD_PROMPT}
 ${DESIGN_REFERENCES}
-${deliveryContract(heroImageUrl)}
+${deliveryContract(images)}
 
 ────────────────────────────────────────────────────────
 YOUR TASK NOW — PHASE 2 of 2: WRITE ONE PAGE'S BODY CONTENT
@@ -290,11 +297,11 @@ async function mapPool<T, R>(items: T[], limit: number, fn: (item: T, i: number)
 
 export async function generateSite(
   brief: Record<string, unknown>,
-  opts: { heroImageUrl?: string | null } = {},
+  opts: { images?: SiteImage[] | null } = {},
 ): Promise<SiteResult> {
   if (!process.env.ANTHROPIC_API_KEY) return { error: "ANTHROPIC_API_KEY is not set" };
 
-  const heroImageUrl = opts.heroImageUrl ?? null;
+  const images = opts.images ?? null;
   const briefJson = JSON.stringify(brief, null, 2);
   const client = newClient();
 
@@ -303,7 +310,7 @@ export async function generateSite(
   try {
     const raw = await runText(
       client,
-      planSystem(heroImageUrl),
+      planSystem(images),
       "Plan the multi-page website and design the shared CSS, header and footer for this business. Here is the onboarding brief as JSON:\n\n" +
         briefJson,
       20000,
@@ -348,7 +355,7 @@ export async function generateSite(
   if (!homeAssigned && normPages[0]) normPages[0].is_home = true;
 
   // ── Phase 2: write each page's body (bounded concurrency) ──
-  const pageSys = pageSystem(shared, heroImageUrl);
+  const pageSys = pageSystem(shared, images);
   const pages = await mapPool(normPages, PAGE_CONCURRENCY, async (p) => {
     const user =
       `Write the <main> body for this page.\n\n` +
