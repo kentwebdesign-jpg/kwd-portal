@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { MASTER_BUILD_PROMPT } from "./master-build-prompt";
+import { DESIGN_REFERENCES } from "./design-references";
 
 // Turns an onboarding brief into a complete, multi-page website using Claude,
 // driven by the agency's house rules (MASTER-BUILD-PROMPT.md) plus the client's
@@ -51,13 +52,20 @@ schema.org JSON-LD embedded directly in the page body as
 LocalBusiness on the home/contact page, FAQPage on the FAQ page, etc. Never
 invent reviews, ratings or accreditations for the schema.
 
-JAVASCRIPT: vanilla only, kept minimal, and the page MUST be fully usable
-without it (progressive enhancement). Prefer CSS/HTML for interactions (e.g.
-<details> for FAQs, position: sticky for the mobile call bar). No preloaders,
-ever.`;
+JAVASCRIPT & MOTION (the WOW layer): the page MUST still be fully usable without
+JS (progressive enhancement) — use CSS/HTML for core interactions (<details> for
+FAQs, position: sticky for the mobile call bar). ON TOP of that, you MAY load
+lightweight motion libraries from a CDN via <script src> to deliver the wow layer:
+Lenis (smooth-scroll) and GSAP + ScrollTrigger (staggered reveals, pinned
+sections, parallax, clip-path image reveals, counters). Keep it lean, lazy-init,
+respect prefers-reduced-motion, and never drop below the Lighthouse-90 budget.
+Full 3D/WebGL is out of scope for this auto-build (no asset pipeline) — get the
+"wow" from bold type, depth, layered CSS and choreographed GSAP motion instead.
+No preloaders, ever.`;
 
 // ── Phase 1: plan the site + design system ────────────────────────────────
 const PLAN_SYSTEM = `${MASTER_BUILD_PROMPT}
+${DESIGN_REFERENCES}
 ${DELIVERY_CONTRACT}
 
 ────────────────────────────────────────────────────────
@@ -110,6 +118,7 @@ no code fences, no commentary. Shape:
 // ── Phase 2: write one page's body ─────────────────────────────────────────
 function pageSystem(shared: SharedDesign): string {
   return `${MASTER_BUILD_PROMPT}
+${DESIGN_REFERENCES}
 ${DELIVERY_CONTRACT}
 
 ────────────────────────────────────────────────────────
