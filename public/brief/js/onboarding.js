@@ -6,19 +6,13 @@
   'use strict';
 
   /* -----------------------------------------------------------
-     CONFIG — submissions go via Web3Forms (https://web3forms.com).
-     ► ONE-TIME SETUP (takes 30 seconds):
-       1. Go to https://web3forms.com
-       2. Enter the inbox you want briefs to land in (e.g. hello@kentwebdesign.com)
-       3. They email you an Access Key — paste it below in place of
-          'YOUR-WEB3FORMS-ACCESS-KEY'.
-       That's it. Every completed brief (answers + uploaded files) then
-       arrives in that inbox automatically — no account, no password.
+     CONFIG — submissions go to the Kent Web Design portal backend:
+       • files are uploaded straight to storage via /api/upload-url
+       • the completed brief is saved via /api/submit (feeds /submissions
+         and the automated "Build site" pipeline).
      Fallback: if a submission ever fails, the customer is offered an
      "email us" / "download" option so nothing is ever lost.
   ----------------------------------------------------------- */
-  var WEB3FORMS_KEY = '08688d2a-49ee-4b8e-9e83-e427b02b712b';
-  var SUBMIT_ENDPOINT = 'https://api.web3forms.com/submit';
   var SUBMIT_EMAIL = 'hello@kentwebdesign.com'; // used only for the fallback "email us" link
   var STORAGE_KEY = 'kwd_onboarding_v1';
 
@@ -315,10 +309,21 @@
         var added = 0;
         hexes.forEach(function (h) { h = h.toLowerCase(); if (selected.indexOf(h) === -1) { selected.push(h); added++; } });
         update();
-        setMsg(added ? ('Pulled ' + added + ' colour' + (added > 1 ? 's' : '') + ' from your logo — tweak them above if you like.')
-                     : 'Those colours are already selected above.');
+        setMsg(added ? ('Pulled ' + added + ' colour' + (added > 1 ? 's' : '') + ' from your logo — they show below, remove any you do not want.')
+                     : 'Those colours are already selected below.');
       });
     });
+
+    // "Pick my own colours" → reveal the palette panel
+    var mtoggle = document.querySelector('[data-manual-toggle]');
+    var mpanel = document.querySelector('[data-manual-panel]');
+    if (mtoggle && mpanel) {
+      mtoggle.addEventListener('click', function () {
+        var open = mpanel.hasAttribute('hidden');
+        if (open) mpanel.removeAttribute('hidden'); else mpanel.setAttribute('hidden', '');
+        mtoggle.setAttribute('aria-expanded', String(open));
+      });
+    }
 
     update();
   }

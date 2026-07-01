@@ -321,3 +321,38 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
   .btn{padding:.75em 1.1em;font-size:.95rem}
   .foot-hint{display:none}
 }
+
+/* ---- Primary "pull from logo" card (colours + font) ---- */
+.logo-pull{display:flex;align-items:center;gap:14px;width:100%;padding:16px 18px;border:2px solid var(--teal);
+  border-radius:14px;background:rgba(14,124,123,.05);cursor:pointer;margin:0 0 12px;transition:background .15s,box-shadow .15s}
+.logo-pull:hover{background:rgba(14,124,123,.1)}
+.logo-pull input{position:absolute;opacity:0;pointer-events:none}
+.logo-pull .lp-ic{flex:0 0 auto;width:46px;height:46px;border-radius:12px;display:grid;place-items:center;background:var(--teal);color:#fff}
+.logo-pull .lp-ic svg{width:24px;height:24px}
+.logo-pull .lp-txt{flex:1;display:flex;flex-direction:column;line-height:1.3}
+.logo-pull .lp-txt b{font-size:1.06rem}
+.logo-pull .lp-txt small{color:var(--slate);font-size:.85rem}
+.logo-pull .lp-check{flex:0 0 auto;width:28px;height:28px;border-radius:50%;border:2px solid var(--line-2);display:grid;place-items:center;color:#fff}
+.logo-pull .lp-check svg{width:16px;height:16px;opacity:0;transform:scale(.6);transition:.15s}
+.logo-pull:has(input:checked){background:rgba(14,124,123,.12);box-shadow:0 0 0 3px rgba(14,124,123,.16)}
+.logo-pull:has(input:checked) .lp-check{background:var(--teal);border-color:var(--teal)}
+.logo-pull:has(input:checked) .lp-check svg{opacity:1;transform:scale(1)}
+.manual-colours{margin-top:4px}
+.manual-colours summary{cursor:pointer;color:var(--teal-700);font-weight:600;font-size:.92rem;padding:6px 0;list-style:revert}
+.manual-colours[open] summary{margin-bottom:12px}
+
+/* ---- Primary font card: match my logo (full width, accent) ---- */
+.fontcard--logo{grid-column:1 / -1;border:2px solid var(--teal);background:rgba(14,124,123,.05)}
+.fontcard--logo:hover{background:rgba(14,124,123,.1)}
+.fontcard--logo .samp{display:flex;align-items:center;font-family:var(--display)}
+
+/* ---- Two matching colour cards (pull-from-logo + pick-your-own) ---- */
+.colour-cards{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:12px}
+.colour-cards .logo-pull{flex:1 1 240px;margin:0}
+.logo-pull.as-btn{font-family:inherit;font-size:1rem;text-align:left}
+.lp-chev{flex:0 0 auto;width:28px;height:28px;display:grid;place-items:center;color:var(--slate)}
+.lp-chev svg{width:20px;height:20px;transition:transform .2s}
+.logo-pull.as-btn[aria-expanded="true"] .lp-chev svg{transform:rotate(180deg)}
+.logo-pull.as-btn[aria-expanded="true"]{background:rgba(14,124,123,.1);box-shadow:0 0 0 3px rgba(14,124,123,.16)}
+.palette-panel{margin-top:6px}
+.picked{margin-top:2px}

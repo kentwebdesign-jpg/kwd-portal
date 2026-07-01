@@ -134,14 +134,29 @@
         </div>
         <div class="field" data-key="brand_colours">
           <label class="label">Brand colours</label>
-          <p class="hint">Tap the colours you'd like for your site — pick as many as you like. Not fussed? Tick the box and we'll take them straight from your logo.</p>
+          <p class="hint">The easiest way: we pull your colours straight from your logo, so your site matches your brand exactly. Prefer to choose your own? Open the picker below.</p>
           <input type="hidden" id="brand_colours" name="brand_colours">
-          <div class="colourpick" data-colourpick>
-            <div class="palette" data-palette></div>
-            <div class="picked" data-picked></div>
+          <div class="colour-cards">
+            <label class="logo-pull">
+              <input type="checkbox" data-colourpull>
+              <span class="lp-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="1.4"/><circle cx="17" cy="10.5" r="1.4"/><circle cx="8" cy="7.5" r="1.4"/><circle cx="6.5" cy="12.5" r="1.4"/><path d="M12 3a9 9 0 1 0 0 18c1 0 1.6-.8 1.5-1.7-.1-.9.6-1.8 1.6-1.8H17a4 4 0 0 0 4-4c0-5-4-9.5-9-10.5z"/></svg></span>
+              <span class="lp-txt"><b>Use my logo's colours</b><small>Recommended — we match your brand</small></span>
+              <span class="lp-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span>
+            </label>
+            <button type="button" class="logo-pull as-btn" data-manual-toggle aria-expanded="false">
+              <span class="lp-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span>
+              <span class="lp-txt"><b>Pick my own colours</b><small>Choose from a palette</small></span>
+              <span class="lp-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+            </button>
           </div>
-          <label class="assist"><input type="checkbox" data-colourpull> Just pull the colours from my logo</label>
           <p class="pull-msg" data-pullmsg hidden></p>
+          <div class="colourpick" data-colourpick>
+            <div class="picked" data-picked></div>
+            <div class="palette-panel" data-manual-panel hidden>
+              <p class="hint" style="margin:2px 0 8px">Tap any colours you'd like:</p>
+              <div class="palette" data-palette></div>
+            </div>
+          </div>
         </div>
         <div class="field" data-key="brand_guidelines" data-file>
           <label class="label">Any other brand assets</label>
@@ -221,8 +236,11 @@
         </div>
         <div class="field" data-key="font_personality">
           <label class="label">Pick a font you like the feel of</label>
-          <p class="hint">This is the actual lettering — go with whichever just feels like you.</p>
+          <p class="hint">Easiest: let us match the font to your logo. Or pick one below that feels like you.</p>
           <div class="font-grid" data-input="radio" data-name="font_personality">
+            <label class="fontcard fontcard--logo"><input type="radio" name="font_personality" value="Match my logo — pull the font from it" checked>
+              <span class="samp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;margin-right:8px"><path d="M4 7V5h16v2M9 19h6M12 5v14"/></svg>Match my logo</span>
+              <span class="nm">Recommended — we use a font that suits your logo <span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span></span></label>
             <label class="fontcard"><input type="radio" name="font_personality" value="Fraunces — classic & elegant">
               <span class="samp" style="font-family:'Fraunces',serif">Your business</span>
               <span class="nm">Classic &amp; elegant <span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span></span></label>
@@ -562,5 +580,20 @@
 </div>
 
 <script src="/brief/js/onboarding.js" defer></script>
+<script>
+  // Multi-page and One-pager are mutually exclusive — can't have both.
+  document.addEventListener('DOMContentLoaded', function () {
+    var opposite = { 'Multi-page': 'One-pager', 'One-pager': 'Multi-page' };
+    document.querySelectorAll('input[name="features"]').forEach(function (cb) {
+      cb.addEventListener('change', function () {
+        if (cb.checked && opposite[cb.value]) {
+          document.querySelectorAll('input[name="features"]').forEach(function (o) {
+            if (o.value === opposite[cb.value]) o.checked = false;
+          });
+        }
+      });
+    });
+  });
+</script>
 </body>
 </html>
