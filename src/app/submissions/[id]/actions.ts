@@ -59,19 +59,22 @@ export async function buildSite(formData: FormData) {
             wp_password: result.adminPassword,
             app_password: result.appPassword,
             site_id: result.siteId,
+            pages: result.pages,
           } as Prisma.InputJsonValue,
           builtAt: new Date(),
         },
       });
 
       const adminUrl = `${result.siteUrl.replace(/\/$/, "")}/wp-admin`;
+      const pageList = result.pages.map((p) => `  • ${p.title} — ${p.url}`).join("\n");
       await sendAdminEmail({
         subject: `Site built: ${business}`,
         text:
-          `The AI-designed website for ${business} has finished building.\n\n` +
+          `The AI-designed website for ${business} has finished building — ${result.pages.length} pages.\n\n` +
           `View site: ${result.siteUrl}\n` +
           `WordPress admin: ${adminUrl}\n` +
-          `Login: ${result.adminUser} / ${result.adminPassword}`,
+          `Login: ${result.adminUser} / ${result.adminPassword}\n\n` +
+          `Pages:\n${pageList}`,
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);

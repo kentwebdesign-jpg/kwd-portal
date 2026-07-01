@@ -25,7 +25,9 @@ export function wpClient(siteUrl: string, user: string, appPassword: string) {
   }
 
   return {
-    createPage: (p: { title: string; content: string; slug?: string; status?: string }) =>
+    // `excerpt` becomes the page's meta description (the canvas theme emits it
+    // in <head>). Returns the created page incl. `id` and `link` (its URL).
+    createPage: (p: { title: string; content: string; slug?: string; status?: string; excerpt?: string }) =>
       req("POST", "/wp/v2/pages", { status: "publish", ...p }),
     updateSettings: (s: Json) => req("POST", "/wp/v2/settings", s),
   };

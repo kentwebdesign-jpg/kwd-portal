@@ -115,6 +115,7 @@ export default async function SubmissionDetail({
     error?: string;
     designed?: boolean;
     ai_error?: string | null;
+    pages?: { title: string; slug: string; url: string; isHome: boolean }[];
   };
 
   return (
@@ -170,9 +171,26 @@ export default async function SubmissionDetail({
                   </a>
                 </div>
                 {(build.wp_username || build.wp_password) && (
-                  <p style={{ color: "#666", margin: 0, fontFamily: "monospace", fontSize: 13 }}>
+                  <p style={{ color: "#666", margin: "0 0 8px", fontFamily: "monospace", fontSize: 13 }}>
                     {build.wp_username} / {build.wp_password}
                   </p>
+                )}
+                {build.pages && build.pages.length > 0 && (
+                  <div>
+                    <p style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: ".05em", color: "#999", margin: "6px 0 6px" }}>
+                      {build.pages.length} pages
+                    </p>
+                    <ul style={{ margin: 0, paddingLeft: 18, columns: build.pages.length > 6 ? 2 : 1 }}>
+                      {build.pages.map((p) => (
+                        <li key={p.slug} style={{ marginBottom: 4 }}>
+                          <a href={p.url} target="_blank" rel="noopener noreferrer" style={{ color: "#0e7c7b", textDecoration: "none" }}>
+                            {p.title}
+                            {p.isHome ? " (home)" : ""}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
               </div>
             ) : submission.buildStatus === "error" ? (
@@ -194,8 +212,9 @@ export default async function SubmissionDetail({
               </button>
             </form>
             <p style={{ color: "#aaa", fontSize: 12, margin: "8px 0 0" }}>
-              Claude designs a complete site from this brief and publishes it to WordPress. Takes a
-              minute or two; you&apos;ll get an email when it&apos;s ready.
+              Claude designs a complete multi-page site from this brief — applying the Kent Web
+              Design house rules — and publishes every page individually to WordPress. Takes a few
+              minutes; you&apos;ll get an email when it&apos;s ready.
             </p>
           </>
         )}
