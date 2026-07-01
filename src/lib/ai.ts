@@ -11,9 +11,34 @@ import { DESIGN_REFERENCES } from "./design-references";
 
 const MODEL = "claude-opus-4-8";
 
+// The IMAGES rule depends on whether we generated a hero image for this build.
+// With one, the AI is told to use that exact (hosted) URL as the home hero and
+// invent no other photo URLs; without one, it stays image-free and leans on CSS.
+function imagesSection(heroImageUrl?: string | null): string {
+  if (heroImageUrl) {
+    return `IMAGES: a professional hero image has been generated specifically for THIS
+business and is hosted for the site at this exact URL:
+${heroImageUrl}
+Use it as the main visual of the HOME page hero — a full-bleed CSS
+background-image (with a gradient/overlay so any text on top stays readable) or
+a prominent <img> with descriptive alt text. Use that URL verbatim; do not alter
+it. Do NOT invent, guess or link ANY other photo URLs anywhere on the site. For
+every other section and page, build visual richness with CSS (gradients, colour,
+shapes, large type, generous spacing) and inline SVG for icons. If the brief
+contains a logo URL you may use it and give it a proper moment; otherwise render
+the business name as a styled wordmark.`;
+  }
+  return `IMAGES: do not use <img> tags pointing at photo URLs — there are no photo assets
+yet. Build visual richness with CSS (gradients, colour, shapes, large type,
+generous spacing) and inline SVG for icons. If the brief contains a logo URL you
+may use it and give it a proper moment; otherwise render the business name as a
+styled wordmark.`;
+}
+
 // How the house rules map onto THIS delivery mechanism (individual WP pages).
 // The master prompt is the quality bar; this is the output contract.
-const DELIVERY_CONTRACT = `
+function deliveryContract(heroImageUrl?: string | null): string {
+  return `
 
 ────────────────────────────────────────────────────────
 DELIVERY MECHANISM FOR THIS BUILD (read carefully)
@@ -38,11 +63,7 @@ is exactly "/". Every other page links as "/<slug>/" (leading and trailing
 slash, e.g. "/boiler-repair/"). The nav in the header must link to every page
 in the sitemap and the hrefs MUST match the page slugs exactly.
 
-IMAGES: do not use <img> tags pointing at photo URLs — there are no photo assets
-yet. Build visual richness with CSS (gradients, colour, shapes, large type,
-generous spacing) and inline SVG for icons. If the brief contains a logo URL you
-may use it and give it a proper moment; otherwise render the business name as a
-styled wordmark.
+${imagesSection(heroImageUrl)}
 
 SEO: WordPress supplies each page's <title> (from the WP page title) and the
 theme emits the meta description we set, plus /wp-sitemap.xml and robots.txt.
@@ -62,11 +83,13 @@ respect prefers-reduced-motion, and never drop below the Lighthouse-90 budget.
 Full 3D/WebGL is out of scope for this auto-build (no asset pipeline) — get the
 "wow" from bold type, depth, layered CSS and choreographed GSAP motion instead.
 No preloaders, ever.`;
+}
 
 // ── Phase 1: plan the site + design system ────────────────────────────────
-const PLAN_SYSTEM = `${MASTER_BUILD_PROMPT}
+function planSystem(heroImageUrl?: string | null): string {
+  return `${MASTER_BUILD_PROMPT}
 ${DESIGN_REFERENCES}
-${DELIVERY_CONTRACT}
+${deliveryContract(heroImageUrl)}
 
 ────────────────────────────────────────────────────────
 YOUR TASK NOW — PHASE 1 of 2: PLAN THE SITE + DESIGN SYSTEM
@@ -114,12 +137,13 @@ no code fences, no commentary. Shape:
     }
   ]
 }`;
+}
 
 // ── Phase 2: write one page's body ─────────────────────────────────────────
-function pageSystem(shared: SharedDesign): string {
+function pageSystem(shared: SharedDesign, heroImageUrl?: string | null): string {
   return `${MASTER_BUILD_PROMPT}
 ${DESIGN_REFERENCES}
-${DELIVERY_CONTRACT}
+${deliveryContract(heroImageUrl)}
 
 ────────────────────────────────────────────────────────
 YOUR TASK NOW — PHASE 2 of 2: WRITE ONE PAGE'S BODY CONTENT
@@ -264,9 +288,13 @@ async function mapPool<T, R>(items: T[], limit: number, fn: (item: T, i: number)
   return results;
 }
 
-export async function generateSite(brief: Record<string, unknown>): Promise<SiteResult> {
+export async function generateSite(
+  brief: Record<string, unknown>,
+  opts: { heroImageUrl?: string | null } = {},
+): Promise<SiteResult> {
   if (!process.env.ANTHROPIC_API_KEY) return { error: "ANTHROPIC_API_KEY is not set" };
 
+  const heroImageUrl = opts.heroImageUrl ?? null;
   const briefJson = JSON.stringify(brief, null, 2);
   const client = newClient();
 
@@ -275,7 +303,7 @@ export async function generateSite(brief: Record<string, unknown>): Promise<Site
   try {
     const raw = await runText(
       client,
-      PLAN_SYSTEM,
+      planSystem(heroImageUrl),
       "Plan the multi-page website and design the shared CSS, header and footer for this business. Here is the onboarding brief as JSON:\n\n" +
         briefJson,
       20000,
@@ -320,7 +348,7 @@ export async function generateSite(brief: Record<string, unknown>): Promise<Site
   if (!homeAssigned && normPages[0]) normPages[0].is_home = true;
 
   // ── Phase 2: write each page's body (bounded concurrency) ──
-  const pageSys = pageSystem(shared);
+  const pageSys = pageSystem(shared, heroImageUrl);
   const pages = await mapPool(normPages, PAGE_CONCURRENCY, async (p) => {
     const user =
       `Write the <main> body for this page.\n\n` +
