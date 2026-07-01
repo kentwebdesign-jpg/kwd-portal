@@ -29,6 +29,9 @@ export function wpClient(siteUrl: string, user: string, appPassword: string) {
     // in <head>). Returns the created page incl. `id` and `link` (its URL).
     createPage: (p: { title: string; content: string; slug?: string; status?: string; excerpt?: string }) =>
       req("POST", "/wp/v2/pages", { status: "publish", ...p }),
+    // Update an existing page (used to rewrite the hero image URL once the image
+    // has been re-hosted in the site's own media library).
+    updatePage: (id: number, p: { content?: string }) => req("POST", `/wp/v2/pages/${id}`, p),
     updateSettings: (s: Json) => req("POST", "/wp/v2/settings", s),
   };
 }

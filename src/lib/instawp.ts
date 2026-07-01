@@ -43,6 +43,11 @@ export async function createSite(): Promise<InstaWpSite> {
   throw new Error("InstaWP only returned sites still provisioning (no credentials). Try again shortly.");
 }
 
+// Best-effort delete (used to clean up a half-built site when a build fails).
+export async function deleteSite(siteId: number | string): Promise<void> {
+  await fetch(`${INSTAWP_BASE}/sites/${siteId}`, { method: "DELETE", headers: instaHeaders() }).catch(() => {});
+}
+
 function instaHeaders() {
   const token = process.env.INSTAWP_API_TOKEN;
   if (!token) throw new Error("INSTAWP_API_TOKEN is not set.");

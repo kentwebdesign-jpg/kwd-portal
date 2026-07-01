@@ -1,12 +1,19 @@
-import { createSite, runWpCli, lastLine } from "./instawp";
+import { createSite, deleteSite, runWpCli, lastLine } from "./instawp";
 import { wpClient } from "./wp";
 import { generateSite } from "./ai";
+import { generateHeroImage } from "./higgsfield";
 
 // Turns a submitted brief into a built-out, MULTI-PAGE WordPress site. The AI
 // design is essential: if Claude can't produce the site, the build STOPS with
 // an error (no half-built site). Order matters — design first, so a failure
 // doesn't leave an orphaned InstaWP site behind. Each page in the plan becomes
 // its own WordPress page, sharing a byte-identical header, footer and CSS.
+//
+// Imagery: before designing, we generate a bespoke hero image (Higgsfield) and
+// hand its URL to the design so the home hero uses it. Images are an
+// enhancement — if generation isn't configured or fails, the build proceeds
+// image-free. Once the site exists we re-host the image into the site's own WP
+// media library and rewrite the URL, so nothing depends on an external CDN.
 
 type Brief = Record<string, unknown>;
 
@@ -35,15 +42,21 @@ export async function buildClientSite(
     }
   };
 
-  // 1. Design the whole multi-page site first. If this fails, stop here —
-  //    nothing has been provisioned.
+  // 1. Generate a bespoke hero image from the brief (best-effort). If Higgsfield
+  //    isn't configured or the call fails, heroImageUrl stays null and the site
+  //    is designed image-free.
+  await stage("Generating imagery");
+  const heroImageUrl = await generateHeroImage(data);
+
+  // 2. Design the whole multi-page site. If this fails, stop here — nothing has
+  //    been provisioned yet.
   await stage("Designing the site with AI (house rules + brief)");
-  const site = await generateSite(data);
+  const site = await generateSite(data, { heroImageUrl });
   if (!site.pages || site.pages.length === 0) {
     throw new Error(site.error ? `AI design failed: ${site.error}` : "AI design failed (no pages returned)");
   }
 
-  // 2. Provision the WordPress site.
+  // 3. Provision the WordPress site.
   await stage("Provisioning the WordPress site");
   const wpSite = await createSite();
   const siteId = wpSite.id;
@@ -54,53 +67,81 @@ export async function buildClientSite(
     throw new Error("InstaWP did not return full site details.");
   }
 
-  // 3. Access for REST writes.
-  await stage("Setting up access");
-  const appPassword = lastLine(
-    await runWpCli(siteId, `wp user application-password create ${adminUser} kwd-portal --porcelain`),
-  );
-  if (!/^[A-Za-z0-9]{16,}$/.test(appPassword)) {
-    throw new Error("Could not obtain an application password from the new site.");
-  }
+  // From here on a site exists, so a failure must clean it up rather than leave
+  // an orphaned InstaWP site behind.
+  try {
+    // 4. Access for REST writes.
+    await stage("Setting up access");
+    const appPassword = lastLine(
+      await runWpCli(siteId, `wp user application-password create ${adminUser} kwd-portal --porcelain`),
+    );
+    if (!/^[A-Za-z0-9]{16,}$/.test(appPassword)) {
+      throw new Error("Could not obtain an application password from the new site.");
+    }
 
-  // 4. Blank-canvas theme + pretty permalinks so /<slug>/ links resolve.
-  await stage("Preparing WordPress");
-  await runWpCli(siteId, `wp theme install ${opts.themeBaseUrl}/kwd-canvas.zip --activate`);
-  await runWpCli(siteId, `wp rewrite structure '/%postname%/' --hard`);
-  await runWpCli(siteId, `wp rewrite flush --hard`);
+    // 5. Blank-canvas theme + pretty permalinks so /<slug>/ links resolve.
+    await stage("Preparing WordPress");
+    await runWpCli(siteId, `wp theme install ${opts.themeBaseUrl}/kwd-canvas.zip --activate`);
+    await runWpCli(siteId, `wp rewrite structure '/%postname%/' --hard`);
+    await runWpCli(siteId, `wp rewrite flush --hard`);
 
-  const wp = wpClient(siteUrl, adminUser, appPassword);
-  await wp.updateSettings({
-    title: site.siteTitle || txt(data.business_name) || "New site",
-    description: site.tagline || txt(data.tagline),
-  });
-
-  // 5. Create every page.
-  const built: BuiltPage[] = [];
-  let homeId: number | undefined;
-  for (let i = 0; i < site.pages.length; i++) {
-    const p = site.pages[i];
-    await stage(`Building pages (${i + 1}/${site.pages.length}): ${p.title}`);
-    const res = await wp.createPage({
-      title: p.title,
-      slug: p.slug,
-      content: p.html,
-      excerpt: p.metaDescription,
+    const wp = wpClient(siteUrl, adminUser, appPassword);
+    await wp.updateSettings({
+      title: site.siteTitle || txt(data.business_name) || "New site",
+      description: site.tagline || txt(data.tagline),
     });
-    if (p.isHome && typeof res.id === "number") homeId = res.id;
-    built.push({
-      title: p.title,
-      slug: p.slug,
-      url: typeof res.link === "string" ? res.link : `${siteUrl.replace(/\/$/, "")}/${p.slug}/`,
-      isHome: p.isHome,
-    });
-  }
 
-  // 6. Set the home page as the front page.
-  if (homeId != null) {
-    await stage("Setting the home page");
-    await wp.updateSettings({ show_on_front: "page", page_on_front: homeId });
-  }
+    // 6. Re-host the hero image into the site's own media library and swap the
+    //    external URL for the local one across any page that references it. The
+    //    design system CSS is byte-identical on every page, so the URL may
+    //    appear on more than one page. Best-effort: if it fails, pages keep the
+    //    working external URL.
+    let localImageUrl: string | null = null;
+    if (heroImageUrl) {
+      await stage("Adding imagery to the site");
+      try {
+        const attachId = lastLine(await runWpCli(siteId, `wp media import '${heroImageUrl}' --porcelain`));
+        if (/^\d+$/.test(attachId)) {
+          const url = lastLine(await runWpCli(siteId, `wp eval 'echo wp_get_attachment_url(${attachId});'`));
+          if (/^https?:\/\//.test(url)) localImageUrl = url;
+        }
+      } catch {
+        // keep the external URL if re-hosting fails
+      }
+    }
 
-  return { siteUrl, siteId, adminUser, adminPassword, appPassword, pages: built };
+    // 7. Create every page.
+    const built: BuiltPage[] = [];
+    let homeId: number | undefined;
+    for (let i = 0; i < site.pages.length; i++) {
+      const p = site.pages[i];
+      await stage(`Building pages (${i + 1}/${site.pages.length}): ${p.title}`);
+      const html =
+        localImageUrl && heroImageUrl ? p.html.split(heroImageUrl).join(localImageUrl) : p.html;
+      const res = await wp.createPage({
+        title: p.title,
+        slug: p.slug,
+        content: html,
+        excerpt: p.metaDescription,
+      });
+      if (p.isHome && typeof res.id === "number") homeId = res.id;
+      built.push({
+        title: p.title,
+        slug: p.slug,
+        url: typeof res.link === "string" ? res.link : `${siteUrl.replace(/\/$/, "")}/${p.slug}/`,
+        isHome: p.isHome,
+      });
+    }
+
+    // 8. Set the home page as the front page.
+    if (homeId != null) {
+      await stage("Setting the home page");
+      await wp.updateSettings({ show_on_front: "page", page_on_front: homeId });
+    }
+
+    return { siteUrl, siteId, adminUser, adminPassword, appPassword, pages: built };
+  } catch (err) {
+    await deleteSite(siteId);
+    throw err;
+  }
 }
