@@ -116,7 +116,7 @@ export default async function SubmissionDetail({
     designed?: boolean;
     ai_error?: string | null;
     startedAt?: string;
-    hero_image?: { generated: boolean; hostedOnSite: boolean };
+    hero_image?: { generated: boolean; hostedOnSite: boolean; error?: string | null };
     pages?: { title: string; slug: string; url: string; isHome: boolean }[];
   };
 
@@ -175,7 +175,12 @@ export default async function SubmissionDetail({
                       ? build.hero_image.hostedOnSite
                         ? "✓ generated and hosted on the site"
                         : "✓ generated (external URL — re-hosting failed)"
-                      : "✗ none generated (Higgsfield returned nothing — check the keys)"}
+                      : "✗ none generated"}
+                    {!build.hero_image.generated && build.hero_image.error && (
+                      <span style={{ display: "block", color: "#b45309", fontFamily: "ui-monospace, monospace", fontSize: 12, marginTop: 2 }}>
+                        {build.hero_image.error}
+                      </span>
+                    )}
                   </p>
                 )}
                 {build.pages && build.pages.length > 0 && (

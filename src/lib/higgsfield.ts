@@ -1,19 +1,21 @@
 import { higgsfield, config } from "@higgsfield/client/v2";
 
 // Generates a hero image for a site from the brief, via Higgsfield's v2 API
-// (Soul text-to-image). Returns the image URL, or null if Higgsfield isn't
-// configured or generation fails — the image is an enhancement, so a failure
-// must NOT break the build.
+// (Soul text-to-image). Returns { url } on success, or { url: null, error } so
+// the caller can surface WHY it failed — the image is an enhancement, so a
+// failure must NOT break the build.
 
 const txt = (v: unknown) => (typeof v === "string" ? v.trim() : "");
 
 // The v2 subscribe() resolves to this shape (see @higgsfield/client v2 types).
 type V2Response = { status: string; images?: { url?: string }[] };
 
-export async function generateHeroImage(brief: Record<string, unknown>): Promise<string | null> {
+export type HeroImageResult = { url: string | null; error: string | null };
+
+export async function generateHeroImage(brief: Record<string, unknown>): Promise<HeroImageResult> {
   const id = process.env.HIGGSFIELD_API_KEY;
   const secret = process.env.HIGGSFIELD_SECRET;
-  if (!id || !secret) return null;
+  if (!id || !secret) return { url: null, error: "HIGGSFIELD_API_KEY / HIGGSFIELD_SECRET not set" };
 
   try {
     // v2 credentials format is a single "KEY_ID:KEY_SECRET" string.
@@ -45,12 +47,16 @@ export async function generateHeroImage(brief: Record<string, unknown>): Promise
     const res = (await Promise.race([gen, timeout])) as V2Response | null;
     if (res && res.status === "completed") {
       const url = res.images?.[0]?.url;
-      return url ?? null;
+      if (url) return { url, error: null };
+      return { url: null, error: "completed but no image URL returned" };
     }
-    console.error("Higgsfield returned no completed image:", res?.status ?? "timeout");
-    return null;
+    const status = res?.status ?? "timeout after 150s";
+    console.error("Higgsfield returned no completed image:", status);
+    return { url: null, error: `no image (${status})` };
   } catch (err) {
-    console.error("Higgsfield image generation failed:", err);
-    return null;
+    const name = err instanceof Error ? err.constructor.name : "Error";
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("Higgsfield image generation failed:", name, msg);
+    return { url: null, error: `${name}: ${msg}` };
   }
 }
