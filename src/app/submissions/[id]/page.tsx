@@ -116,6 +116,7 @@ export default async function SubmissionDetail({
     designed?: boolean;
     ai_error?: string | null;
     startedAt?: string;
+    hero_image?: { generated: boolean; hostedOnSite: boolean };
     pages?: { title: string; slug: string; url: string; isHome: boolean }[];
   };
 
@@ -165,6 +166,16 @@ export default async function SubmissionDetail({
                 {(build.wp_username || build.wp_password) && (
                   <p style={{ color: "#666", margin: "0 0 8px", fontFamily: "monospace", fontSize: 13 }}>
                     {build.wp_username} / {build.wp_password}
+                  </p>
+                )}
+                {build.hero_image && (
+                  <p style={{ fontSize: 13, margin: "0 0 8px", color: build.hero_image.generated ? "#137e6d" : "#b45309" }}>
+                    Hero image:{" "}
+                    {build.hero_image.generated
+                      ? build.hero_image.hostedOnSite
+                        ? "✓ generated and hosted on the site"
+                        : "✓ generated (external URL — re-hosting failed)"
+                      : "✗ none generated (Higgsfield returned nothing — check the keys)"}
                   </p>
                 )}
                 {build.pages && build.pages.length > 0 && (

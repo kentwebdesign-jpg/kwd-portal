@@ -28,6 +28,8 @@ export type BuildResult = {
   adminPassword: string; // for wp-admin login
   appPassword: string; // for REST writes
   pages: BuiltPage[]; // every WordPress page we created
+  // Diagnostics: whether a hero image was generated and re-hosted on the site.
+  heroImage: { generated: boolean; hostedOnSite: boolean };
 };
 
 export async function buildClientSite(
@@ -139,7 +141,15 @@ export async function buildClientSite(
       await wp.updateSettings({ show_on_front: "page", page_on_front: homeId });
     }
 
-    return { siteUrl, siteId, adminUser, adminPassword, appPassword, pages: built };
+    return {
+      siteUrl,
+      siteId,
+      adminUser,
+      adminPassword,
+      appPassword,
+      pages: built,
+      heroImage: { generated: !!heroImageUrl, hostedOnSite: !!localImageUrl },
+    };
   } catch (err) {
     await deleteSite(siteId);
     throw err;

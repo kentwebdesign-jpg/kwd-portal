@@ -66,6 +66,7 @@ export async function buildSite(formData: FormData) {
             app_password: result.appPassword,
             site_id: result.siteId,
             pages: result.pages,
+            hero_image: result.heroImage,
           } as Prisma.InputJsonValue,
           builtAt: new Date(),
         },
