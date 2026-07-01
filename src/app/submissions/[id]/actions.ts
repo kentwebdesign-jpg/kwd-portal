@@ -31,10 +31,16 @@ export async function buildSite(formData: FormData) {
   const data = submission.data as Record<string, unknown>;
   const business = submission.businessName ?? "the client";
 
-  // Flip to "building" right away so the UI shows progress.
+  // Flip to "building" right away so the UI shows progress. Record the start
+  // time so the portal can show an elapsed timer (and make a stuck build
+  // obvious). onStage only updates buildStage, so startedAt persists.
   await prisma.submission.update({
     where: { id },
-    data: { buildStatus: "building", buildStage: "Starting", buildData: {} as Prisma.InputJsonValue },
+    data: {
+      buildStatus: "building",
+      buildStage: "Starting",
+      buildData: { startedAt: new Date().toISOString() } as Prisma.InputJsonValue,
+    },
   });
   revalidatePath(`/submissions/${id}`);
 

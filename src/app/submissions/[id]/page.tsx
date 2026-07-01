@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getViewer } from "@/lib/auth";
 import { presignDownload } from "@/lib/r2";
 import { buildSite } from "./actions";
-import BuildStatusPoller from "./BuildStatusPoller";
+import BuildProgress from "./BuildProgress";
 
 export const dynamic = "force-dynamic";
 
@@ -115,6 +115,7 @@ export default async function SubmissionDetail({
     error?: string;
     designed?: boolean;
     ai_error?: string | null;
+    startedAt?: string;
     pages?: { title: string; slug: string; url: string; isHome: boolean }[];
   };
 
@@ -135,12 +136,7 @@ export default async function SubmissionDetail({
 
         {submission.buildStatus === "building" ? (
           <div style={{ fontSize: 14 }}>
-            <p style={{ color: "#0e7c7b", fontWeight: 600, margin: "0 0 6px" }}>
-              ⏳ Building… {submission.buildStage ? `— ${submission.buildStage}` : ""}
-            </p>
-            <p style={{ color: "#888", margin: "0 0 12px", fontSize: 13 }}>
-              This updates automatically and takes a minute or two.
-            </p>
+            <BuildProgress currentStage={submission.buildStage} startedAt={build.startedAt ?? null} />
             <form action={buildSite}>
               <input type="hidden" name="id" value={submission.id} />
               <button
@@ -150,10 +146,6 @@ export default async function SubmissionDetail({
                 Re-run build
               </button>
             </form>
-            <p style={{ color: "#aaa", fontSize: 12, margin: "8px 0 0" }}>
-              Stuck for more than a few minutes? The build may have been interrupted (e.g. a redeploy). Re-run it.
-            </p>
-            <BuildStatusPoller />
           </div>
         ) : (
           <>
