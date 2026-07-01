@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { MASTER_BUILD_PROMPT } from "./master-build-prompt";
 import { DESIGN_REFERENCES } from "./design-references";
+import { DESIGN_INTELLIGENCE } from "./design-intelligence";
 
 // Turns an onboarding brief into a complete, multi-page website using Claude,
 // driven by the agency's house rules (MASTER-BUILD-PROMPT.md) plus the client's
@@ -96,6 +97,7 @@ No preloaders, ever.`;
 function planSystem(images?: SiteImage[] | null): string {
   return `${MASTER_BUILD_PROMPT}
 ${DESIGN_REFERENCES}
+${DESIGN_INTELLIGENCE}
 ${deliveryContract(images)}
 
 ────────────────────────────────────────────────────────
@@ -150,6 +152,7 @@ no code fences, no commentary. Shape:
 function pageSystem(shared: SharedDesign, images?: SiteImage[] | null): string {
   return `${MASTER_BUILD_PROMPT}
 ${DESIGN_REFERENCES}
+${DESIGN_INTELLIGENCE}
 ${deliveryContract(images)}
 
 ────────────────────────────────────────────────────────
