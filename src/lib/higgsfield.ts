@@ -28,7 +28,10 @@ export type SiteImage = { url: string; label: string };
 export type SiteImagesResult = { images: SiteImage[]; error: string | null };
 
 const BASE_STYLE =
-  "Modern, clean, professional, cinematic lighting. No text, no words, no letters, no logos, no watermarks.";
+  "Photorealistic photograph, natural lighting, real-world documentary style, believable for a UK local business. " +
+  "Clean uncluttered composition with clear empty space for a text overlay. " +
+  "ABSOLUTELY NO text, letters, words, numbers, captions, signage, logos, watermarks, labels or lettering of any kind anywhere in the image. " +
+  "No storefront signs, no billboards, no branded vehicles, no printed materials. If a surface would normally carry text, leave it blank.";
 
 // Generate a single image and return its URL (or throw so the caller can note
 // the reason). Capped so one slow generation can't hang the whole build.
