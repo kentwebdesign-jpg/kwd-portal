@@ -1,7 +1,7 @@
 import { createSite, deleteSite, runWpCli, lastLine } from "./instawp";
 import { wpClient } from "./wp";
 import { generateSite } from "./ai";
-import { generateHeroImage } from "./higgsfield";
+import { generateSiteImages } from "./higgsfield";
 
 // Turns a submitted brief into a built-out, MULTI-PAGE WordPress site. The AI
 // design is essential: if Claude can't produce the site, the build STOPS with
@@ -9,11 +9,12 @@ import { generateHeroImage } from "./higgsfield";
 // doesn't leave an orphaned InstaWP site behind. Each page in the plan becomes
 // its own WordPress page, sharing a byte-identical header, footer and CSS.
 //
-// Imagery: before designing, we generate a bespoke hero image (Higgsfield) and
-// hand its URL to the design so the home hero uses it. Images are an
-// enhancement — if generation isn't configured or fails, the build proceeds
-// image-free. Once the site exists we re-host the image into the site's own WP
-// media library and rewrite the URL, so nothing depends on an external CDN.
+// Imagery: before designing, we generate a small set of bespoke images
+// (Higgsfield) and hand their URLs to the design so they get used across the
+// whole site. Images are an enhancement — if generation isn't configured or
+// fails, the build proceeds image-free. Once the site exists we re-host each
+// image into the site's own WP media library and rewrite the URLs, so nothing
+// depends on an external CDN.
 
 type Brief = Record<string, unknown>;
 
@@ -28,9 +29,9 @@ export type BuildResult = {
   adminPassword: string; // for wp-admin login
   appPassword: string; // for REST writes
   pages: BuiltPage[]; // every WordPress page we created
-  // Diagnostics: whether a hero image was generated and re-hosted on the site,
+  // Diagnostics: how many images were generated and re-hosted on the site,
   // plus the reason if generation failed.
-  heroImage: { generated: boolean; hostedOnSite: boolean; error: string | null };
+  images: { generated: number; hostedOnSite: number; error: string | null };
 };
 
 export async function buildClientSite(
@@ -45,17 +46,17 @@ export async function buildClientSite(
     }
   };
 
-  // 1. Generate a bespoke hero image from the brief (best-effort). If Higgsfield
-  //    isn't configured or the call fails, heroImageUrl stays null and the site
-  //    is designed image-free.
+  // 1. Generate a small set of bespoke images from the brief (best-effort). If
+  //    Higgsfield isn't configured or the calls fail, the set is empty and the
+  //    site is designed image-free.
   await stage("Generating imagery");
-  const hero = await generateHeroImage(data);
-  const heroImageUrl = hero.url;
+  const imageSet = await generateSiteImages(data);
+  const images = imageSet.images;
 
-  // 2. Design the whole multi-page site. If this fails, stop here — nothing has
-  //    been provisioned yet.
+  // 2. Design the whole multi-page site, handing it the image library. If this
+  //    fails, stop here — nothing has been provisioned yet.
   await stage("Designing the site with AI (house rules + brief)");
-  const site = await generateSite(data, { heroImageUrl });
+  const site = await generateSite(data, { images });
   if (!site.pages || site.pages.length === 0) {
     throw new Error(site.error ? `AI design failed: ${site.error}` : "AI design failed (no pages returned)");
   }
@@ -95,33 +96,35 @@ export async function buildClientSite(
       description: site.tagline || txt(data.tagline),
     });
 
-    // 6. Re-host the hero image into the site's own media library and swap the
-    //    external URL for the local one across any page that references it. The
-    //    design system CSS is byte-identical on every page, so the URL may
-    //    appear on more than one page. Best-effort: if it fails, pages keep the
-    //    working external URL.
-    let localImageUrl: string | null = null;
-    if (heroImageUrl) {
+    // 6. Re-host each generated image into the site's own media library and map
+    //    its external URL to the local one. The design references these URLs
+    //    across multiple pages, so we rewrite every page below. Best-effort: any
+    //    image that fails to re-host keeps its working external URL.
+    const urlMap: [string, string][] = [];
+    if (images.length) {
       await stage("Adding imagery to the site");
-      try {
-        const attachId = lastLine(await runWpCli(siteId, `wp media import '${heroImageUrl}' --porcelain`));
-        if (/^\d+$/.test(attachId)) {
-          const url = lastLine(await runWpCli(siteId, `wp eval 'echo wp_get_attachment_url(${attachId});'`));
-          if (/^https?:\/\//.test(url)) localImageUrl = url;
+      for (const img of images) {
+        try {
+          const attachId = lastLine(await runWpCli(siteId, `wp media import '${img.url}' --porcelain`));
+          if (/^\d+$/.test(attachId)) {
+            const local = lastLine(await runWpCli(siteId, `wp eval 'echo wp_get_attachment_url(${attachId});'`));
+            if (/^https?:\/\//.test(local)) urlMap.push([img.url, local]);
+          }
+        } catch {
+          // keep the external URL if re-hosting this image fails
         }
-      } catch {
-        // keep the external URL if re-hosting fails
       }
     }
 
-    // 7. Create every page.
+    // 7. Create every page, rewriting any generated image URLs to their
+    //    re-hosted local equivalents.
     const built: BuiltPage[] = [];
     let homeId: number | undefined;
     for (let i = 0; i < site.pages.length; i++) {
       const p = site.pages[i];
       await stage(`Building pages (${i + 1}/${site.pages.length}): ${p.title}`);
-      const html =
-        localImageUrl && heroImageUrl ? p.html.split(heroImageUrl).join(localImageUrl) : p.html;
+      let html = p.html;
+      for (const [src, local] of urlMap) html = html.split(src).join(local);
       const res = await wp.createPage({
         title: p.title,
         slug: p.slug,
@@ -150,7 +153,7 @@ export async function buildClientSite(
       adminPassword,
       appPassword,
       pages: built,
-      heroImage: { generated: !!heroImageUrl, hostedOnSite: !!localImageUrl, error: hero.error },
+      images: { generated: images.length, hostedOnSite: urlMap.length, error: imageSet.error },
     };
   } catch (err) {
     await deleteSite(siteId);
