@@ -104,6 +104,12 @@ content and copy, same class-name conventions, same pages/nav. Do not rename
 classes used by other pages; extend or restyle them in place. Strengthen, don't
 rebuild from scratch.
 
+IMAGERY FIXES: if the review flags an image as garbled, text-filled, broken or
+cheap-looking, REMOVE that image URL from the CSS/HTML entirely and replace the
+treatment with a rich brand gradient/colour composition (or another image from
+the approved library below, if one fits). Never keep a flagged image, and never
+introduce any image URL that is not in the approved library.
+
 Non-negotiables while fixing (house rules): no preloaders; generous edge
 padding (content never tight to the viewport edge); mobile-first integrity at
 390px; text over imagery must sit on a strong overlay; British English; never
@@ -123,10 +129,15 @@ Whatever you include must be COMPLETE — it replaces the old version wholesale.
 export function reviseUser(
   critique: Critique,
   current: { css: string; header: string; footer: string; homeBody: string },
+  imageLibrary: { url: string; label: string }[] = [],
 ): string {
+  const library = imageLibrary.length
+    ? imageLibrary.map((i) => `- [${i.label}] ${i.url}`).join("\n")
+    : "(none — use CSS gradients/colour only)";
   return (
     `DESIGN REVIEW VERDICT (from real screenshots of the current build):\n` +
     JSON.stringify(critique, null, 2) +
+    `\n\nAPPROVED IMAGE LIBRARY (the only image URLs allowed anywhere):\n${library}` +
     `\n\nCURRENT SHARED CSS:\n${current.css}` +
     `\n\nCURRENT HEADER:\n${current.header}` +
     `\n\nCURRENT FOOTER:\n${current.footer}` +

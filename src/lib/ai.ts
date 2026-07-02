@@ -345,7 +345,7 @@ async function designReviewLoop(
   client: Anthropic,
   shared: SharedDesign,
   homeBody: string,
-  context: { businessName: string; designRationale: string },
+  context: { businessName: string; designRationale: string; images: SiteImage[] },
   onStage: (s: string) => Promise<void>,
 ): Promise<{ shared: SharedDesign; homeBody: string; review: DesignReview }> {
   const review: DesignReview = {
@@ -412,12 +412,16 @@ async function designReviewLoop(
       const raw = await runText(
         client,
         reviseSystem(),
-        reviseUser(critique, {
-          css: current.shared.css,
-          header: current.shared.header,
-          footer: current.shared.footer,
-          homeBody: current.homeBody,
-        }),
+        reviseUser(
+          critique,
+          {
+            css: current.shared.css,
+            header: current.shared.header,
+            footer: current.shared.footer,
+            homeBody: current.homeBody,
+          },
+          context.images,
+        ),
         32000,
         "high",
       );
@@ -559,6 +563,7 @@ export async function generateSite(
     {
       businessName: plan.site_title || txt(brief.business_name) || "the business",
       designRationale: plan.design_rationale ?? "",
+      images: images ?? [],
     },
     stage,
   );
