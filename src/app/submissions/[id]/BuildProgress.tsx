@@ -15,6 +15,8 @@ import { useRouter } from "next/navigation";
 const STEPS: { label: string; match: (s: string) => boolean }[] = [
   { label: "Generating imagery", match: (s) => s.startsWith("Generating imagery") },
   { label: "Designing the site with AI", match: (s) => s.startsWith("Designing the site") },
+  { label: "Writing page content", match: (s) => s.startsWith("Writing page content") },
+  { label: "Design review (render → critique → refine)", match: (s) => s.startsWith("Reviewing the design") || s.startsWith("Refining the design") },
   { label: "Provisioning WordPress", match: (s) => s.startsWith("Provisioning") },
   { label: "Setting up access", match: (s) => s.startsWith("Setting up access") },
   { label: "Preparing WordPress", match: (s) => s.startsWith("Preparing WordPress") },
@@ -24,7 +26,9 @@ const STEPS: { label: string; match: (s: string) => boolean }[] = [
 ];
 
 // If a build runs longer than this, flag it as possibly stuck.
-const STALE_SECONDS = 240;
+// The design phase alone (plan + pages + the render→critique→refine review)
+// legitimately runs 8-12 minutes, so only flag well beyond that.
+const STALE_SECONDS = 900;
 
 function fmt(totalSeconds: number): string {
   const m = Math.floor(totalSeconds / 60);
@@ -133,6 +137,8 @@ export default function BuildProgress({
 // to the "Building pages" step. Other stages have no useful extra detail.
 function detail(stage: string): string {
   if (stage.startsWith("Building pages")) return stage.slice("Building pages".length).trim();
+  if (stage.startsWith("Writing page content")) return stage.slice("Writing page content".length).trim();
+  if (stage.startsWith("Reviewing the design") || stage.startsWith("Refining the design")) return stage;
   return "";
 }
 
