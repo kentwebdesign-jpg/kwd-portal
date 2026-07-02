@@ -115,15 +115,18 @@ padding (content never tight to the viewport edge); mobile-first integrity at
 390px; text over imagery must sit on a strong overlay; British English; never
 invent facts, reviews or accreditations.
 
-OUTPUT FORMAT (critical): respond with ONLY a single JSON object, no markdown,
-no code fences. Include ONLY the parts you changed; omit unchanged keys:
-{
-  "shared_css": string,   // the COMPLETE revised CSS design system (omit if unchanged)
-  "header_html": string,  // complete revised header (omit if unchanged)
-  "footer_html": string,  // complete revised footer (omit if unchanged)
-  "home_body": string     // complete revised home <main> inner HTML (omit if unchanged)
-}
-Whatever you include must be COMPLETE — it replaces the old version wholesale.`;
+OUTPUT FORMAT (critical): NO JSON, NO markdown fences, NO commentary. Output
+only the sections you changed, each starting with its marker line; omit a
+section entirely if unchanged. Whatever you include must be COMPLETE — it
+replaces the old version wholesale:
+===CSS===
+(the complete revised CSS design system, without a <style> tag)
+===HEADER===
+(the complete revised <header>…</header>)
+===FOOTER===
+(the complete revised <footer>…</footer>)
+===HOME_BODY===
+(the complete revised home <main> inner HTML)`;
 }
 
 export function reviseUser(
@@ -142,7 +145,7 @@ export function reviseUser(
     `\n\nCURRENT HEADER:\n${current.header}` +
     `\n\nCURRENT FOOTER:\n${current.footer}` +
     `\n\nCURRENT HOME <main> BODY:\n${current.homeBody}` +
-    `\n\nApply the fixes and output the JSON.`
+    `\n\nApply the fixes and output the changed sections.`
   );
 }
 

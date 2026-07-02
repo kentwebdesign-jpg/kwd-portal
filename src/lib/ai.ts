@@ -115,8 +115,10 @@ before a scroll trigger fires. Anything animated in must start visible-enough
 screenshot or no-JS visit still shows a complete page.`;
 }
 
-// ── Phase 1: plan the site + design system ────────────────────────────────
-function planSystem(images?: SiteImage[] | null): string {
+// ── Phase 1a: plan the sitemap ─────────────────────────────────────────────
+// Small, reliable JSON. The big code blobs (CSS/HTML) are deliberately NOT in
+// this response — giant code inside JSON strings is how builds die on a comma.
+function planSitemapSystem(images?: SiteImage[] | null): string {
   return `${MASTER_BUILD_PROMPT}
 ${DESIGN_REFERENCES}
 ${DESIGN_INTELLIGENCE}
@@ -124,13 +126,13 @@ ${BUTTON_BUILD_SPEC}
 ${deliveryContract(images)}
 
 ────────────────────────────────────────────────────────
-YOUR TASK NOW — PHASE 1 of 2: PLAN THE SITE + DESIGN SYSTEM
+YOUR TASK NOW — PHASE 1a: PLAN THE SITEMAP
 ────────────────────────────────────────────────────────
-From the client's brief, decide the sitemap and design the SHARED parts of the
-site: the one CSS design system, the header (with working nav to every page)
-and the footer. Do NOT write the body content of each page yet — that happens in
-phase 2. For each page, instead write a clear internal outline of what it must
-contain, derived from the brief.
+From the client's brief, decide the sitemap and, for each page, a clear
+internal outline of what it must contain (derived from the brief). Also decide
+the brand direction (palette + fonts from the client's brand/logo cues) and
+record it as a short rationale — the design system itself is written in the
+next step.
 
 Sitemap rules (build to the brief, honour the master prompt):
 - Always a HOME page (is_home: true, slug "home").
@@ -139,24 +141,17 @@ Sitemap rules (build to the brief, honour the master prompt):
 - ONE page per town/area the brief actually lists as covered — real, distinct
   content each. Never invent coverage; never spin up thin near-duplicate town
   pages.
-- An FAQ page (wired to FAQPage schema in phase 2).
+- An FAQ page (wired to FAQPage schema later).
 - A contact page (click-to-call, address, hours, enquiry form UX per the master
   prompt) and an about page if the brief gives a story.
 - Only add feature pages the brief asks for. Keep it to what the brief supports.
-
-Build the palette AND the fonts from the client's brand/logo cues, make it
-visually distinct (not a template), and hit the master prompt's quality bar.
 
 OUTPUT FORMAT (critical): respond with ONLY a single JSON object, no markdown,
 no code fences, no commentary. Shape:
 {
   "site_title": string,            // the business name for the WP site title
   "tagline": string,               // short tagline for the WP site description
-  "design_rationale": string,      // 1-3 sentences: palette + font choices and why (for our logs)
-  "shared_css": string,            // the COMPLETE CSS design system, WITHOUT a <style> tag. Includes @import for Google fonts, resets, layout, header, footer, buttons, sections, cards, FAQ, forms, responsive media queries, reduced-motion.
-  "header_html": string,           // the full <header>…</header> markup: sticky top bar, wordmark/logo, nav linking to every page ("/" for home, "/<slug>/" for others), and a primary call-to-action (tel: link).
-  "footer_html": string,           // the full <footer>…</footer> markup: page links, short bio, logo/wordmark, contact (phone + registered address), socials if provided, auto-updating year, and a small "Built by Kent Web Design" credit linking to https://kentwebdesign.com
-  "shared_js": string,             // OPTIONAL vanilla JS WITHOUT a <script> tag (scroll reveals, mobile nav toggle, form success state). "" if none. Site must work without it.
+  "design_rationale": string,      // 2-4 sentences: palette + font choices + design direction and why
   "pages": [
     {
       "slug": string,              // url slug, lowercase-hyphen. Home is "home".
@@ -165,10 +160,53 @@ no code fences, no commentary. Shape:
       "is_home": boolean,
       "h1": string,                // the single keyword-led H1 for this page
       "meta_description": string,  // unique ~150 char meta description
-      "outline": string            // detailed, brief-derived instructions for what sections + copy this page must contain in phase 2
+      "outline": string            // detailed, brief-derived instructions for what sections + copy this page must contain
     }
   ]
 }`;
+}
+
+// ── Phase 1b: write the shared design system as FENCED TEXT ────────────────
+// CSS and HTML come back as plain delimited blocks, never JSON-escaped, so a
+// stray quote or a long stylesheet can never corrupt the response.
+function designSystemSystem(images?: SiteImage[] | null): string {
+  return `${MASTER_BUILD_PROMPT}
+${DESIGN_REFERENCES}
+${DESIGN_INTELLIGENCE}
+${BUTTON_BUILD_SPEC}
+${deliveryContract(images)}
+
+────────────────────────────────────────────────────────
+YOUR TASK NOW — PHASE 1b: WRITE THE SHARED DESIGN SYSTEM
+────────────────────────────────────────────────────────
+The sitemap has been agreed (given in the user message, with the design
+rationale). Now write the site's SHARED parts, hitting the master prompt's
+quality bar and the agreed direction: the one CSS design system, the header
+(sticky top bar with nav linking to EVERY page: "/" for home, "/<slug>/" for
+others — hrefs must match the slugs exactly, plus a primary tel: CTA), and the
+footer (page links, short bio, logo/wordmark, contact incl. phone + registered
+address, socials if provided, auto-updating year, and a small "Built by Kent
+Web Design" credit linking to https://kentwebdesign.com). Optionally a small
+block of vanilla JS (scroll reveals, mobile nav toggle, form success state) —
+the site must work without it.
+
+The CSS must include: @import for the chosen Google fonts, resets, layout,
+header, footer, buttons, sections, cards, FAQ, forms, responsive media queries
+and reduced-motion — AND section-level layout components with real design
+character (split/asymmetric sections, a bold stat band, a numbered step
+timeline, a bento/feature grid), so page bodies have strong layouts to build
+from, not just stacked boxes.
+
+OUTPUT FORMAT (critical): NO JSON. NO markdown fences. NO commentary. Output
+exactly four sections, each starting with its marker line:
+===CSS===
+(the complete CSS design system, without a <style> tag)
+===HEADER===
+(the full <header>…</header> markup)
+===FOOTER===
+(the full <footer>…</footer> markup)
+===JS===
+(vanilla JS without a <script> tag, or leave empty)`;
 }
 
 // ── Phase 2: write one page's body ─────────────────────────────────────────
@@ -249,10 +287,6 @@ type Plan = {
   site_title: string;
   tagline: string;
   design_rationale?: string;
-  shared_css: string;
-  header_html: string;
-  footer_html: string;
-  shared_js?: string;
   pages: PlanPage[];
 };
 
@@ -298,6 +332,32 @@ function extractJson(text: string): string {
   const last = t.lastIndexOf("}");
   if (first >= 0 && last > first) t = t.slice(first, last + 1);
   return t;
+}
+
+// Parse ===NAME=== fenced sections from a plain-text response.
+function splitBlocks(text: string): Map<string, string> {
+  const out = new Map<string, string>();
+  const re = /^===([A-Z_]+)===[ \t]*$/gm;
+  const marks: { name: string; start: number; end: number }[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text))) marks.push({ name: m[1], start: m.index, end: re.lastIndex });
+  for (let i = 0; i < marks.length; i++) {
+    const from = marks[i].end;
+    const to = i + 1 < marks.length ? marks[i + 1].start : text.length;
+    out.set(marks[i].name, text.slice(from, to).trim());
+  }
+  return out;
+}
+
+// Run a generation with one retry — a single malformed response should never
+// kill a whole build.
+async function withRetry<T>(label: string, fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    console.error(`${label} attempt 1 failed, retrying:`, err instanceof Error ? err.message : err);
+    return await fn();
+  }
 }
 
 function stripFragment(text: string): string {
@@ -425,22 +485,18 @@ async function designReviewLoop(
         32000,
         "high",
       );
-      const patch = JSON.parse(extractJson(raw)) as Partial<{
-        shared_css: string;
-        header_html: string;
-        footer_html: string;
-        home_body: string;
-      }>;
+      const blocks = splitBlocks(raw);
+      const patchCss = blocks.get("CSS") ?? "";
+      const patchHeader = blocks.get("HEADER") ?? "";
+      const patchFooter = blocks.get("FOOTER") ?? "";
+      const patchBody = blocks.get("HOME_BODY") ?? "";
       const revised: SharedDesign = {
-        css: typeof patch.shared_css === "string" && patch.shared_css.trim() ? patch.shared_css : current.shared.css,
-        header:
-          typeof patch.header_html === "string" && patch.header_html.trim() ? patch.header_html : current.shared.header,
-        footer:
-          typeof patch.footer_html === "string" && patch.footer_html.trim() ? patch.footer_html : current.shared.footer,
+        css: patchCss.length >= 500 ? patchCss : current.shared.css,
+        header: /<header/i.test(patchHeader) ? patchHeader : current.shared.header,
+        footer: /<footer/i.test(patchFooter) ? patchFooter : current.shared.footer,
         js: current.shared.js,
       };
-      const revisedBody =
-        typeof patch.home_body === "string" && patch.home_body.trim() ? patch.home_body : current.homeBody;
+      const revisedBody = patchBody.length >= 80 ? patchBody : current.homeBody;
       const changed =
         revised.css !== current.shared.css ||
         revised.header !== current.shared.header ||
@@ -478,40 +534,65 @@ export async function generateSite(
   const client = newClient();
   const txt = (v: unknown) => (typeof v === "string" ? v.trim() : "");
 
-  // ── Phase 1: plan + shared design system ──
+  // ── Phase 1a: plan the sitemap (small JSON, retried) ──
+  await stage("Planning the site");
   let plan: Plan;
   try {
-    const raw = await runText(
-      client,
-      planSystem(images),
-      "Plan the multi-page website and design the shared CSS, header and footer for this business. Here is the onboarding brief as JSON:\n\n" +
-        briefJson,
-      20000,
-      "high",
-    );
-    plan = JSON.parse(extractJson(raw)) as Plan;
+    plan = await withRetry("Sitemap planning", async () => {
+      const raw = await runText(
+        client,
+        planSitemapSystem(images),
+        "Plan the multi-page website for this business. Here is the onboarding brief as JSON:\n\n" + briefJson,
+        8000,
+        "high",
+      );
+      const p = JSON.parse(extractJson(raw)) as Plan;
+      if (!Array.isArray(p?.pages) || p.pages.length === 0) throw new Error("plan had no pages");
+      return p;
+    });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error("AI site planning failed:", msg);
     return { error: `AI site planning failed: ${msg}` };
   }
 
-  if (
-    !plan?.shared_css ||
-    !plan.header_html ||
-    !plan.footer_html ||
-    !Array.isArray(plan.pages) ||
-    plan.pages.length === 0
-  ) {
-    return { error: "AI plan was incomplete (missing design system or pages)." };
+  // ── Phase 1b: shared design system as fenced text (never JSON, retried) ──
+  await stage("Designing the design system");
+  let shared: SharedDesign;
+  try {
+    shared = await withRetry("Design system", async () => {
+      const raw = await runText(
+        client,
+        designSystemSystem(images),
+        "Write the shared design system for this site.\n\nAGREED SITEMAP + DIRECTION:\n" +
+          JSON.stringify(
+            {
+              site_title: plan.site_title,
+              tagline: plan.tagline,
+              design_rationale: plan.design_rationale ?? "",
+              pages: plan.pages.map((p) => ({ slug: p.slug, nav_label: p.nav_label, is_home: p.is_home })),
+            },
+            null,
+            2,
+          ) +
+          "\n\nFULL CLIENT BRIEF:\n" +
+          briefJson,
+        24000,
+        "high",
+      );
+      const blocks = splitBlocks(raw);
+      const css = blocks.get("CSS") ?? "";
+      const header = blocks.get("HEADER") ?? "";
+      const footer = blocks.get("FOOTER") ?? "";
+      if (css.length < 500 || !/<header/i.test(header) || !/<footer/i.test(footer))
+        throw new Error("design system response was incomplete");
+      return { css, header, footer, js: blocks.get("JS") ?? "" };
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("AI design system failed:", msg);
+    return { error: `AI design system failed: ${msg}` };
   }
-
-  let shared: SharedDesign = {
-    css: plan.shared_css,
-    header: plan.header_html,
-    footer: plan.footer_html,
-    js: plan.shared_js ?? "",
-  };
 
   // Normalise + de-duplicate slugs; guarantee exactly one home page.
   const seen = new Set<string>();
